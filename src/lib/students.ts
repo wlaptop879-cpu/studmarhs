@@ -1,6 +1,14 @@
-// Roster (student record - just identity, no marks)
+// Class (e.g., "Std 10", "Std 11", "Std 12")
+export type ClassRoom = {
+  id: string;
+  name: string;
+  createdAt: string;
+};
+
+// Roster (student record - belongs to a class)
 export type Student = {
   id: string;
+  classId: string;
   name: string;
   nameTamil?: string;
   createdAt: string;
@@ -9,23 +17,38 @@ export type Student = {
 // Mark status: numeric, "ab" = absent, "no" = did not write exam
 export type MarkStatus = number | "ab" | "no";
 
-// One exam session containing marks for all students
+// One exam session containing marks for all students of a class
 export type Exam = {
   id: string;
+  classId: string;
   subject: string;
   totalMarks: number;
-  date: string; // ISO
+  date: string; // ISO (user-editable)
   marks: Record<string, MarkStatus>; // studentId -> status
 };
 
-const STUDENTS_KEY = "wisdom-students-v2";
-const EXAMS_KEY = "wisdom-exams-v2";
-const AUTH_KEY = "wisdom-auth-v1";
+const CLASSES_KEY = "wisdom-classes-v1";
+const STUDENTS_KEY = "wisdom-students-v3";
+const EXAMS_KEY = "wisdom-exams-v3";
 
-export const ADMIN_USER = "WISDOM";
-export const ADMIN_PASS = "MATHS";
-export const CLASS_NAME = "STD 12";
+export const CENTRE_NAME = "Wisdom Maths Tuition Centre";
 
+/* ---------- Classes ---------- */
+export function loadClasses(): ClassRoom[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(CLASSES_KEY);
+    return raw ? (JSON.parse(raw) as ClassRoom[]) : [];
+  } catch {
+    return [];
+  }
+}
+export function saveClasses(list: ClassRoom[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(CLASSES_KEY, JSON.stringify(list));
+}
+
+/* ---------- Students ---------- */
 export function loadStudents(): Student[] {
   if (typeof window === "undefined") return [];
   try {
@@ -40,6 +63,7 @@ export function saveStudents(list: Student[]) {
   localStorage.setItem(STUDENTS_KEY, JSON.stringify(list));
 }
 
+/* ---------- Exams ---------- */
 export function loadExams(): Exam[] {
   if (typeof window === "undefined") return [];
   try {
@@ -52,21 +76,6 @@ export function loadExams(): Exam[] {
 export function saveExams(list: Exam[]) {
   if (typeof window === "undefined") return;
   localStorage.setItem(EXAMS_KEY, JSON.stringify(list));
-}
-
-export function isAuthed(): boolean {
-  if (typeof window === "undefined") return false;
-  return localStorage.getItem(AUTH_KEY) === "1";
-}
-export function signIn(user: string, pass: string): boolean {
-  if (user.trim().toUpperCase() === ADMIN_USER && pass.trim().toUpperCase() === ADMIN_PASS) {
-    localStorage.setItem(AUTH_KEY, "1");
-    return true;
-  }
-  return false;
-}
-export function signOut() {
-  localStorage.removeItem(AUTH_KEY);
 }
 
 export function uid() {
@@ -110,4 +119,26 @@ export function formatMark(m: MarkStatus | undefined, opts?: { tamil?: boolean }
   if (m === "ab") return opts?.tamil ? "வரவில்லை" : "Absent";
   if (m === "no") return opts?.tamil ? "தேர்வு எழுதவில்லை" : "Did not write";
   return String(m);
+}
+
+export function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+// Convert ISO -> "yyyy-mm-dd" for <input type="date">
+export function isoToDateInput(iso: string): string {
+  const d = new Date(iso);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+export function dateInputToIso(v: string): string {
+  // treat as local date
+  const [y, m, d] = v.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0).toISOString();
 }
