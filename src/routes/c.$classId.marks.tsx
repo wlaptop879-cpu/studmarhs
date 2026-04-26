@@ -195,6 +195,7 @@ function MarkEntryPage() {
 
           {active && (
             <MarksList
+              key={active.id}
               students={students}
               active={active}
               onSet={(sid, m) => setMark(active.id, sid, m)}
