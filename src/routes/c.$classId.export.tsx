@@ -353,11 +353,13 @@ function ExportPage() {
     });
     list.sort((a, b) => {
       if (sort === "name") return a.student.name.localeCompare(b.student.name);
+      // For "high" order: numbers (high→low), then "no" (didn't write), then "ab" (absent), then unset.
+      // Rank values are designed so larger = earlier when sorting high→low.
       const rank = (m: MarkStatus | undefined) => {
-        if (typeof m === "number") return m;
-        if (m === "ab") return -2;
-        if (m === "no") return -3;
-        return -4;
+        if (typeof m === "number") return m + 1000; // numbers always above status codes
+        if (m === "no") return -1; // தேர்வு எழுதவில்லை comes before absent
+        if (m === "ab") return -2; // வரவில்லை last among entered
+        return -3; // not entered
       };
       const ra = rank(a.mark);
       const rb = rank(b.mark);
