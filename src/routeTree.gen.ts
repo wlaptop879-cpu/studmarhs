@@ -9,24 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ExportRouteImport } from './routes/export'
-import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ClassesRouteImport } from './routes/classes'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CClassIdRouteImport } from './routes/c.$classId'
+import { Route as CClassIdStudentsRouteImport } from './routes/c.$classId.students'
+import { Route as CClassIdMarksRouteImport } from './routes/c.$classId.marks'
+import { Route as CClassIdExportRouteImport } from './routes/c.$classId.export'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExportRoute = ExportRouteImport.update({
-  id: '/export',
-  path: '/export',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const ClassesRoute = ClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,62 +26,92 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CClassIdRoute = CClassIdRouteImport.update({
+  id: '/c/$classId',
+  path: '/c/$classId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CClassIdStudentsRoute = CClassIdStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => CClassIdRoute,
+} as any)
+const CClassIdMarksRoute = CClassIdMarksRouteImport.update({
+  id: '/marks',
+  path: '/marks',
+  getParentRoute: () => CClassIdRoute,
+} as any)
+const CClassIdExportRoute = CClassIdExportRouteImport.update({
+  id: '/export',
+  path: '/export',
+  getParentRoute: () => CClassIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/export': typeof ExportRoute
-  '/login': typeof LoginRoute
+  '/classes': typeof ClassesRoute
+  '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/export': typeof CClassIdExportRoute
+  '/c/$classId/marks': typeof CClassIdMarksRoute
+  '/c/$classId/students': typeof CClassIdStudentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/export': typeof ExportRoute
-  '/login': typeof LoginRoute
+  '/classes': typeof ClassesRoute
+  '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/export': typeof CClassIdExportRoute
+  '/c/$classId/marks': typeof CClassIdMarksRoute
+  '/c/$classId/students': typeof CClassIdStudentsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
-  '/export': typeof ExportRoute
-  '/login': typeof LoginRoute
+  '/classes': typeof ClassesRoute
+  '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/export': typeof CClassIdExportRoute
+  '/c/$classId/marks': typeof CClassIdMarksRoute
+  '/c/$classId/students': typeof CClassIdStudentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/export' | '/login'
+  fullPaths:
+    | '/'
+    | '/classes'
+    | '/c/$classId'
+    | '/c/$classId/export'
+    | '/c/$classId/marks'
+    | '/c/$classId/students'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/export' | '/login'
-  id: '__root__' | '/' | '/admin' | '/export' | '/login'
+  to:
+    | '/'
+    | '/classes'
+    | '/c/$classId'
+    | '/c/$classId/export'
+    | '/c/$classId/marks'
+    | '/c/$classId/students'
+  id:
+    | '__root__'
+    | '/'
+    | '/classes'
+    | '/c/$classId'
+    | '/c/$classId/export'
+    | '/c/$classId/marks'
+    | '/c/$classId/students'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
-  ExportRoute: typeof ExportRoute
-  LoginRoute: typeof LoginRoute
+  ClassesRoute: typeof ClassesRoute
+  CClassIdRoute: typeof CClassIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/export': {
-      id: '/export'
-      path: '/export'
-      fullPath: '/export'
-      preLoaderRoute: typeof ExportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/classes': {
+      id: '/classes'
+      path: '/classes'
+      fullPath: '/classes'
+      preLoaderRoute: typeof ClassesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -99,15 +121,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$classId': {
+      id: '/c/$classId'
+      path: '/c/$classId'
+      fullPath: '/c/$classId'
+      preLoaderRoute: typeof CClassIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$classId/students': {
+      id: '/c/$classId/students'
+      path: '/students'
+      fullPath: '/c/$classId/students'
+      preLoaderRoute: typeof CClassIdStudentsRouteImport
+      parentRoute: typeof CClassIdRoute
+    }
+    '/c/$classId/marks': {
+      id: '/c/$classId/marks'
+      path: '/marks'
+      fullPath: '/c/$classId/marks'
+      preLoaderRoute: typeof CClassIdMarksRouteImport
+      parentRoute: typeof CClassIdRoute
+    }
+    '/c/$classId/export': {
+      id: '/c/$classId/export'
+      path: '/export'
+      fullPath: '/c/$classId/export'
+      preLoaderRoute: typeof CClassIdExportRouteImport
+      parentRoute: typeof CClassIdRoute
+    }
   }
 }
 
+interface CClassIdRouteChildren {
+  CClassIdExportRoute: typeof CClassIdExportRoute
+  CClassIdMarksRoute: typeof CClassIdMarksRoute
+  CClassIdStudentsRoute: typeof CClassIdStudentsRoute
+}
+
+const CClassIdRouteChildren: CClassIdRouteChildren = {
+  CClassIdExportRoute: CClassIdExportRoute,
+  CClassIdMarksRoute: CClassIdMarksRoute,
+  CClassIdStudentsRoute: CClassIdStudentsRoute,
+}
+
+const CClassIdRouteWithChildren = CClassIdRoute._addFileChildren(
+  CClassIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
-  ExportRoute: ExportRoute,
-  LoginRoute: LoginRoute,
+  ClassesRoute: ClassesRoute,
+  CClassIdRoute: CClassIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
