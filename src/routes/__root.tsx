@@ -36,6 +36,10 @@ export const Route = createRootRoute({
       { property: "og:description", content: "Class marks management and shareable result images." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Wisdom Maths Tuition Centre" },
+      { name: "twitter:description", content: "Class marks management and shareable result images." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/8bc9b6c6-674f-4ee1-8b58-1ff2de3e9ee6" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/8bc9b6c6-674f-4ee1-8b58-1ff2de3e9ee6" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
