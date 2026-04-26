@@ -575,19 +575,14 @@ const ClassCard = ({
                   {i + 1}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className={cn("truncate text-sm font-semibold leading-tight", theme.rowText)}>
+                  <div
+                    className={cn(
+                      "font-tamil truncate text-base font-semibold leading-tight",
+                      theme.rowText,
+                    )}
+                  >
                     {r.student.name}
                   </div>
-                  {r.student.nameTamil && (
-                    <div
-                      className={cn(
-                        "font-tamil truncate text-xs leading-tight",
-                        theme.rowMuted,
-                      )}
-                    >
-                      {r.student.nameTamil}
-                    </div>
-                  )}
                 </div>
                 <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} />
               </li>
