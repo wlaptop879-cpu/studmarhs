@@ -195,6 +195,7 @@ function MarkEntryPage() {
 
           {active && (
             <MarksList
+              key={active.id}
               students={students}
               active={active}
               onSet={(sid, m) => setMark(active.id, sid, m)}
@@ -297,6 +298,14 @@ function MarksList({
   active: Exam;
   onSet: (studentId: string, mark: MarkStatus | null) => void;
 }) {
+  function focusIndex(i: number) {
+    const el = document.querySelector<HTMLInputElement>(`input[data-mark-idx="${i}"]`);
+    if (el) {
+      el.focus();
+      el.select();
+    }
+  }
+
   return (
     <div>
       <div className="mb-3 flex items-baseline justify-between px-1">
@@ -308,7 +317,7 @@ function MarksList({
         </span>
       </div>
       <ul className="flex flex-col gap-2">
-        {students.map((s) => {
+        {students.map((s, idx) => {
           const tone = avatarTone(s.name);
           const current = active.marks[s.id];
           return (
@@ -318,41 +327,50 @@ function MarksList({
             >
               <div
                 className={cn(
-                  "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                  "font-tamil flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
                   toneBg[tone],
                 )}
               >
-                {initials(s.name)}
+                {s.name.trim().charAt(0) || initials(s.name)}
               </div>
               <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-sm font-medium">{s.name}</span>
-                {s.nameTamil && (
-                  <span className="font-tamil truncate text-xs text-ink-muted">
-                    {s.nameTamil}
-                  </span>
-                )}
+                <span className="font-tamil truncate text-sm font-medium">{s.name}</span>
               </div>
               <MarkInputCell
+                index={idx}
                 value={current}
                 total={active.totalMarks}
                 onCommit={(m) => onSet(s.id, m)}
+                onAdvance={() => focusIndex(idx + 1)}
+                isLast={idx === students.length - 1}
               />
             </li>
           );
         })}
       </ul>
+      {students.length > 0 && (
+        <p className="font-tamil mt-3 px-1 text-[11px] text-ink-muted">
+          Enter அழுத்தினால் அடுத்த மாணவருக்கு தானாக செல்லும்.
+        </p>
+      )}
     </div>
   );
 }
 
 function MarkInputCell({
+  index,
   value,
   total,
   onCommit,
+  onAdvance,
+  isLast,
 }: {
+  index: number;
   value: MarkStatus | undefined;
   total: number;
   onCommit: (m: MarkStatus | null) => void;
+  onAdvance: () => void;
+  isLast: boolean;
 }) {
   const [text, setText] = useState<string>(value === undefined ? "" : String(value));
 
@@ -360,19 +378,20 @@ function MarkInputCell({
     setText(value === undefined ? "" : String(value));
   }, [value]);
 
-  function commit(raw: string) {
+  function commit(raw: string): boolean {
     if (raw.trim() === "") {
       onCommit(null);
-      return;
+      return true;
     }
     const parsed = parseMarkInput(raw, total);
     if (parsed === null) {
-      toast.error('Use a number, "ab" (absent) or "no" (didn\'t write)');
+      toast.error('எண், "ab" (வரவில்லை) அல்லது "no" (தேர்வு எழுதவில்லை) உள்ளிடவும்');
       setText(value === undefined ? "" : String(value));
-      return;
+      return false;
     }
     onCommit(parsed);
     setText(String(parsed));
+    return true;
   }
 
   const tone =
@@ -387,11 +406,17 @@ function MarkInputCell({
   return (
     <div className="flex items-center gap-2">
       <Input
+        data-mark-idx={index}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const ok = commit((e.target as HTMLInputElement).value);
+            if (ok && !isLast) onAdvance();
+            else if (ok && isLast) (e.target as HTMLInputElement).blur();
+          }
         }}
         placeholder={`/ ${total}`}
         className={cn(
