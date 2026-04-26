@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ClassesRouteImport } from './routes/classes'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CClassIdRouteImport } from './routes/c.$classId'
+import { Route as CClassIdStudentsRouteImport } from './routes/c.$classId.students'
+import { Route as CClassIdMarksRouteImport } from './routes/c.$classId.marks'
 
 const ClassesRoute = ClassesRouteImport.update({
   id: '/classes',
@@ -22,31 +25,72 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CClassIdRoute = CClassIdRouteImport.update({
+  id: '/c/$classId',
+  path: '/c/$classId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CClassIdStudentsRoute = CClassIdStudentsRouteImport.update({
+  id: '/students',
+  path: '/students',
+  getParentRoute: () => CClassIdRoute,
+} as any)
+const CClassIdMarksRoute = CClassIdMarksRouteImport.update({
+  id: '/marks',
+  path: '/marks',
+  getParentRoute: () => CClassIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/classes': typeof ClassesRoute
+  '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/marks': typeof CClassIdMarksRoute
+  '/c/$classId/students': typeof CClassIdStudentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/classes': typeof ClassesRoute
+  '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/marks': typeof CClassIdMarksRoute
+  '/c/$classId/students': typeof CClassIdStudentsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/classes': typeof ClassesRoute
+  '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/marks': typeof CClassIdMarksRoute
+  '/c/$classId/students': typeof CClassIdStudentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/classes'
+  fullPaths:
+    | '/'
+    | '/classes'
+    | '/c/$classId'
+    | '/c/$classId/marks'
+    | '/c/$classId/students'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/classes'
-  id: '__root__' | '/' | '/classes'
+  to:
+    | '/'
+    | '/classes'
+    | '/c/$classId'
+    | '/c/$classId/marks'
+    | '/c/$classId/students'
+  id:
+    | '__root__'
+    | '/'
+    | '/classes'
+    | '/c/$classId'
+    | '/c/$classId/marks'
+    | '/c/$classId/students'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ClassesRoute: typeof ClassesRoute
+  CClassIdRoute: typeof CClassIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +109,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$classId': {
+      id: '/c/$classId'
+      path: '/c/$classId'
+      fullPath: '/c/$classId'
+      preLoaderRoute: typeof CClassIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/c/$classId/students': {
+      id: '/c/$classId/students'
+      path: '/students'
+      fullPath: '/c/$classId/students'
+      preLoaderRoute: typeof CClassIdStudentsRouteImport
+      parentRoute: typeof CClassIdRoute
+    }
+    '/c/$classId/marks': {
+      id: '/c/$classId/marks'
+      path: '/marks'
+      fullPath: '/c/$classId/marks'
+      preLoaderRoute: typeof CClassIdMarksRouteImport
+      parentRoute: typeof CClassIdRoute
+    }
   }
 }
+
+interface CClassIdRouteChildren {
+  CClassIdMarksRoute: typeof CClassIdMarksRoute
+  CClassIdStudentsRoute: typeof CClassIdStudentsRoute
+}
+
+const CClassIdRouteChildren: CClassIdRouteChildren = {
+  CClassIdMarksRoute: CClassIdMarksRoute,
+  CClassIdStudentsRoute: CClassIdStudentsRoute,
+}
+
+const CClassIdRouteWithChildren = CClassIdRoute._addFileChildren(
+  CClassIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ClassesRoute: ClassesRoute,
+  CClassIdRoute: CClassIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
