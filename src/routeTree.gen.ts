@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CClassIdRouteImport } from './routes/c.$classId'
 import { Route as CClassIdStudentsRouteImport } from './routes/c.$classId.students'
 import { Route as CClassIdMarksRouteImport } from './routes/c.$classId.marks'
+import { Route as CClassIdExportRouteImport } from './routes/c.$classId.export'
 
 const ClassesRoute = ClassesRouteImport.update({
   id: '/classes',
@@ -40,11 +41,17 @@ const CClassIdMarksRoute = CClassIdMarksRouteImport.update({
   path: '/marks',
   getParentRoute: () => CClassIdRoute,
 } as any)
+const CClassIdExportRoute = CClassIdExportRouteImport.update({
+  id: '/export',
+  path: '/export',
+  getParentRoute: () => CClassIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/classes': typeof ClassesRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/export': typeof CClassIdExportRoute
   '/c/$classId/marks': typeof CClassIdMarksRoute
   '/c/$classId/students': typeof CClassIdStudentsRoute
 }
@@ -52,6 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/classes': typeof ClassesRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/export': typeof CClassIdExportRoute
   '/c/$classId/marks': typeof CClassIdMarksRoute
   '/c/$classId/students': typeof CClassIdStudentsRoute
 }
@@ -60,6 +68,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/classes': typeof ClassesRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
+  '/c/$classId/export': typeof CClassIdExportRoute
   '/c/$classId/marks': typeof CClassIdMarksRoute
   '/c/$classId/students': typeof CClassIdStudentsRoute
 }
@@ -69,6 +78,7 @@ export interface FileRouteTypes {
     | '/'
     | '/classes'
     | '/c/$classId'
+    | '/c/$classId/export'
     | '/c/$classId/marks'
     | '/c/$classId/students'
   fileRoutesByTo: FileRoutesByTo
@@ -76,6 +86,7 @@ export interface FileRouteTypes {
     | '/'
     | '/classes'
     | '/c/$classId'
+    | '/c/$classId/export'
     | '/c/$classId/marks'
     | '/c/$classId/students'
   id:
@@ -83,6 +94,7 @@ export interface FileRouteTypes {
     | '/'
     | '/classes'
     | '/c/$classId'
+    | '/c/$classId/export'
     | '/c/$classId/marks'
     | '/c/$classId/students'
   fileRoutesById: FileRoutesById
@@ -130,15 +142,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CClassIdMarksRouteImport
       parentRoute: typeof CClassIdRoute
     }
+    '/c/$classId/export': {
+      id: '/c/$classId/export'
+      path: '/export'
+      fullPath: '/c/$classId/export'
+      preLoaderRoute: typeof CClassIdExportRouteImport
+      parentRoute: typeof CClassIdRoute
+    }
   }
 }
 
 interface CClassIdRouteChildren {
+  CClassIdExportRoute: typeof CClassIdExportRoute
   CClassIdMarksRoute: typeof CClassIdMarksRoute
   CClassIdStudentsRoute: typeof CClassIdStudentsRoute
 }
 
 const CClassIdRouteChildren: CClassIdRouteChildren = {
+  CClassIdExportRoute: CClassIdExportRoute,
   CClassIdMarksRoute: CClassIdMarksRoute,
   CClassIdStudentsRoute: CClassIdStudentsRoute,
 }
