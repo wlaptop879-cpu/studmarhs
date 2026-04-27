@@ -333,6 +333,8 @@ function ExportPage() {
   const [themeId, setThemeId] = useState<string>("sunrise");
   const [sort, setSort] = useState<SortId>("high");
   const cardRef = useRef<HTMLDivElement>(null);
+  const pdfHostRef = useRef<HTMLDivElement>(null);
+  const [busyPdf, setBusyPdf] = useState(false);
 
   const cls = classes.find((c) => c.id === classId);
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
