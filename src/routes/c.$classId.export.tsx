@@ -3,6 +3,7 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 import { useStudents, useExams, useClasses } from "@/hooks/useStudents";
 import {
   CENTRE_NAME,
@@ -21,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Download, Sparkles } from "lucide-react";
+import { Download, FileText, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
