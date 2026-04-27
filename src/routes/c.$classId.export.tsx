@@ -675,13 +675,19 @@ const ClassCard = ({
             <div className={cn("text-sm font-bold", theme.headerText)}>/ {exam.totalMarks}</div>
           </div>
         </div>
+        {pageInfo && pageInfo.total > 1 && (
+          <div className="absolute right-3 top-3 rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-bold text-white">
+            Page {pageInfo.index + 1} / {pageInfo.total}
+          </div>
+        )}
       </div>
 
       {/* Body */}
       <div className={cn("px-6 py-6", theme.bodyBg)}>
         <ul className="flex flex-col gap-2">
           {rows.map((r, i) => {
-            const top = i < 3 && typeof r.mark === "number";
+            const absoluteRank = startRank + i;
+            const top = absoluteRank < 3 && typeof r.mark === "number";
             return (
               <li
                 key={r.student.id}
@@ -696,7 +702,7 @@ const ClassCard = ({
                     top ? theme.topRankChip : theme.rankChip,
                   )}
                 >
-                  {i + 1}
+                  {absoluteRank + 1}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div
