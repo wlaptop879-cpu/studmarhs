@@ -502,21 +502,47 @@ function ExportPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Export Class Image</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Export Class Results</h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Pick a colour theme and download a single shareable image of all marks.
+            Single-page <strong>PNG</strong> with all students, or paginated <strong>PDF</strong>{" "}
+            (10 students per page).
           </p>
         </div>
-        <Button
-          onClick={handleExport}
-          disabled={!exam}
-          className="rounded-xl bg-brand text-brand-foreground hover:bg-brand/90"
-        >
-          <Download className="mr-1 h-4 w-4" /> Download PNG
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleExport}
+            disabled={!exam}
+            variant="outline"
+            className="rounded-xl"
+          >
+            <Download className="mr-1 h-4 w-4" /> PNG (one page)
+          </Button>
+          <Button
+            onClick={handleExportPdf}
+            disabled={!exam || busyPdf}
+            className="rounded-xl bg-brand text-brand-foreground hover:bg-brand/90"
+          >
+            <FileText className="mr-1 h-4 w-4" />
+            {busyPdf ? "Generating…" : "PDF (10 / page)"}
+          </Button>
+        </div>
       </div>
+
+      {/* Hidden offscreen host for paginated PDF rendering */}
+      <div
+        ref={pdfHostRef}
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: -10000,
+          top: 0,
+          width: 640,
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      />
 
       <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
         <div className="grid gap-4 sm:grid-cols-2">
