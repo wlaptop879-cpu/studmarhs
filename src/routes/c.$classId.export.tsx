@@ -393,6 +393,98 @@ function ExportPage() {
     }
   }
 
+  // PDF: 10 students per page. We render each chunk into an offscreen card
+  // and capture it as PNG, then place it on a portrait A4 page.
+  async function handleExportPdf() {
+    if (!exam || !cls || !pdfHostRef.current) return;
+    setBusyPdf(true);
+    try {
+      const PER_PAGE = 10;
+      const chunks: Row[][] = [];
+      for (let i = 0; i < rows.length; i += PER_PAGE) {
+        chunks.push(rows.slice(i, i + PER_PAGE));
+      }
+      if (chunks.length === 0) chunks.push([]);
+
+      // A4 portrait
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const usableW = pageW - margin * 2;
+
+      const host = pdfHostRef.current;
+
+      for (let pageIdx = 0; pageIdx < chunks.length; pageIdx++) {
+        // Mount a card into the host
+        host.innerHTML = "";
+        const slot = document.createElement("div");
+        host.appendChild(slot);
+
+        // Render React into the slot via direct portal would need extra setup;
+        // instead we use a simple imperative path: build via temp React root.
+        // To keep dependencies minimal, we re-use the visible card by toggling rows.
+        // Simpler approach: clone the visible cardRef DOM, then replace its rows.
+        // But cleanest: render via createRoot.
+        const { createRoot } = await import("react-dom/client");
+        const root = createRoot(slot);
+        await new Promise<void>((resolve) => {
+          root.render(
+            <ClassCard
+              exam={exam}
+              rows={chunks[pageIdx]}
+              theme={theme}
+              className={cls.name}
+              pageInfo={{ index: pageIdx, total: chunks.length, startRank: pageIdx * PER_PAGE }}
+            />,
+          );
+          // give browser a tick to paint
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+
+        const cardEl = slot.firstElementChild as HTMLElement | null;
+        if (!cardEl) {
+          root.unmount();
+          continue;
+        }
+        const dataUrl = await toPng(cardEl, { pixelRatio: 2, cacheBust: true });
+
+        // Compute image size to fit page width
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = reject;
+          img.src = dataUrl;
+        });
+        const ratio = img.height / img.width;
+        let drawW = usableW;
+        let drawH = drawW * ratio;
+        const maxH = pageH - margin * 2;
+        if (drawH > maxH) {
+          drawH = maxH;
+          drawW = drawH / ratio;
+        }
+        const x = (pageW - drawW) / 2;
+        const y = margin;
+
+        if (pageIdx > 0) pdf.addPage();
+        pdf.addImage(dataUrl, "PNG", x, y, drawW, drawH);
+
+        root.unmount();
+      }
+
+      host.innerHTML = "";
+      const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
+      pdf.save(`wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}.pdf`);
+      toast.success(`PDF downloaded · ${chunks.length} page${chunks.length > 1 ? "s" : ""}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not export PDF");
+    } finally {
+      setBusyPdf(false);
+    }
+  }
+
   if (exams.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface/60 p-10 text-center">
