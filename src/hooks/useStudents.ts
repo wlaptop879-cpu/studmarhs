@@ -72,10 +72,10 @@ export function useClasses() {
   }, []);
 
   const updateClass = useCallback(async (id: string, patch: Partial<ClassRoom>) => {
-    const upd: Record<string, unknown> = {};
-    if (patch.name !== undefined) upd.name = patch.name;
     setClasses((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-    await supabase.from("classes").update(upd).eq("id", id);
+    if (patch.name !== undefined) {
+      await supabase.from("classes").update({ name: patch.name }).eq("id", id);
+    }
   }, []);
 
   const deleteClass = useCallback(async (id: string) => {
@@ -168,11 +168,13 @@ export function useStudents(classId?: string) {
   );
 
   const updateStudent = useCallback(async (id: string, patch: Partial<Student>) => {
-    const upd: Record<string, unknown> = {};
-    if (patch.name !== undefined) upd.name = patch.name;
-    if (patch.nameTamil !== undefined) upd.name_tamil = patch.nameTamil;
     setStudents((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-    await supabase.from("students").update(upd).eq("id", id);
+    const upd: { name?: string; name_tamil?: string | null } = {};
+    if (patch.name !== undefined) upd.name = patch.name;
+    if (patch.nameTamil !== undefined) upd.name_tamil = patch.nameTamil ?? null;
+    if (Object.keys(upd).length > 0) {
+      await supabase.from("students").update(upd).eq("id", id);
+    }
   }, []);
 
   const deleteStudent = useCallback(async (id: string) => {
@@ -272,13 +274,20 @@ export function useExams(classId?: string) {
   );
 
   const updateExam = useCallback(async (id: string, patch: Partial<Exam>) => {
-    const upd: Record<string, unknown> = {};
+    setExams((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    const upd: {
+      subject?: string;
+      total_marks?: number;
+      exam_date?: string;
+      marks?: Record<string, MarkStatus>;
+    } = {};
     if (patch.subject !== undefined) upd.subject = patch.subject;
     if (patch.totalMarks !== undefined) upd.total_marks = patch.totalMarks;
     if (patch.date !== undefined) upd.exam_date = patch.date;
     if (patch.marks !== undefined) upd.marks = patch.marks;
-    setExams((prev) => prev.map((e) => (e.id === id ? { ...e, ...patch } : e)));
-    await supabase.from("exams").update(upd).eq("id", id);
+    if (Object.keys(upd).length > 0) {
+      await supabase.from("exams").update(upd).eq("id", id);
+    }
   }, []);
 
   const setMark = useCallback(

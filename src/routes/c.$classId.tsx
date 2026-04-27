@@ -1,16 +1,11 @@
 import { createFileRoute, Outlet, Link, useLocation, redirect } from "@tanstack/react-router";
-import { loadClasses } from "@/lib/students";
 import { AppShell } from "@/components/AppShell";
 import { useClasses } from "@/hooks/useStudents";
-import { Users, ListChecks, Image as ImageIcon } from "lucide-react";
+import { Users, ListChecks, Image as ImageIcon, CalendarCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/c/$classId")({
   beforeLoad: ({ params, location }) => {
-    if (typeof window !== "undefined") {
-      const cls = loadClasses().find((c) => c.id === params.classId);
-      if (!cls) throw redirect({ to: "/classes" });
-    }
     // Redirect bare /c/$classId to students subpage
     if (location.pathname.match(/^\/c\/[^/]+\/?$/)) {
       throw redirect({ to: "/c/$classId/students", params });
@@ -30,8 +25,9 @@ function ClassLayout() {
 
   const tabs = [
     { to: "/c/$classId/students", label: "Students", icon: Users },
-    { to: "/c/$classId/marks", label: "Mark Entry", icon: ListChecks },
-    { to: "/c/$classId/export", label: "Export Image", icon: ImageIcon },
+    { to: "/c/$classId/marks", label: "Marks", icon: ListChecks },
+    { to: "/c/$classId/attendance", label: "Attendance", icon: CalendarCheck },
+    { to: "/c/$classId/export", label: "Export", icon: ImageIcon },
   ] as const;
 
   return (

@@ -59,12 +59,12 @@ function MarkEntryPage() {
 
   if (!sh || !eh) return null;
 
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     const total = Number(newTotal);
     if (!total || total < 1) return toast.error("Enter valid total marks");
     if (!newSubject.trim()) return toast.error("Enter subject");
-    const ex = createExam(newSubject, total, dateInputToIso(newDate));
+    const ex = await createExam(newSubject, total, dateInputToIso(newDate));
     setActiveId(ex.id);
     toast.success("Exam created");
   }
