@@ -633,17 +633,20 @@ const ClassCard = ({
   rows,
   theme,
   className,
+  pageInfo,
   ...rest
 }: {
   exam: Exam;
   rows: Row[];
   theme: Theme;
   className: string;
+  pageInfo?: { index: number; total: number; startRank: number };
 } & { ref?: React.Ref<HTMLDivElement> }) => {
   const ref = (rest as { ref?: React.Ref<HTMLDivElement> }).ref;
   const date = formatDate(exam.date);
   const present = rows.filter((r) => typeof r.mark === "number").length;
   const absent = rows.filter((r) => r.mark === "ab").length;
+  const startRank = pageInfo?.startRank ?? 0;
 
   return (
     <div
