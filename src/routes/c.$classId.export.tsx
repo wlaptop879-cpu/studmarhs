@@ -3,6 +3,7 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 import { useStudents, useExams, useClasses } from "@/hooks/useStudents";
 import {
   CENTRE_NAME,
@@ -21,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Download, Sparkles } from "lucide-react";
+import { Download, FileText, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -332,6 +333,8 @@ function ExportPage() {
   const [themeId, setThemeId] = useState<string>("sunrise");
   const [sort, setSort] = useState<SortId>("high");
   const cardRef = useRef<HTMLDivElement>(null);
+  const pdfHostRef = useRef<HTMLDivElement>(null);
+  const [busyPdf, setBusyPdf] = useState(false);
 
   const cls = classes.find((c) => c.id === classId);
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
@@ -390,6 +393,98 @@ function ExportPage() {
     }
   }
 
+  // PDF: 10 students per page. We render each chunk into an offscreen card
+  // and capture it as PNG, then place it on a portrait A4 page.
+  async function handleExportPdf() {
+    if (!exam || !cls || !pdfHostRef.current) return;
+    setBusyPdf(true);
+    try {
+      const PER_PAGE = 10;
+      const chunks: Row[][] = [];
+      for (let i = 0; i < rows.length; i += PER_PAGE) {
+        chunks.push(rows.slice(i, i + PER_PAGE));
+      }
+      if (chunks.length === 0) chunks.push([]);
+
+      // A4 portrait
+      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const usableW = pageW - margin * 2;
+
+      const host = pdfHostRef.current;
+
+      for (let pageIdx = 0; pageIdx < chunks.length; pageIdx++) {
+        // Mount a card into the host
+        host.innerHTML = "";
+        const slot = document.createElement("div");
+        host.appendChild(slot);
+
+        // Render React into the slot via direct portal would need extra setup;
+        // instead we use a simple imperative path: build via temp React root.
+        // To keep dependencies minimal, we re-use the visible card by toggling rows.
+        // Simpler approach: clone the visible cardRef DOM, then replace its rows.
+        // But cleanest: render via createRoot.
+        const { createRoot } = await import("react-dom/client");
+        const root = createRoot(slot);
+        await new Promise<void>((resolve) => {
+          root.render(
+            <ClassCard
+              exam={exam}
+              rows={chunks[pageIdx]}
+              theme={theme}
+              className={cls.name}
+              pageInfo={{ index: pageIdx, total: chunks.length, startRank: pageIdx * PER_PAGE }}
+            />,
+          );
+          // give browser a tick to paint
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        });
+
+        const cardEl = slot.firstElementChild as HTMLElement | null;
+        if (!cardEl) {
+          root.unmount();
+          continue;
+        }
+        const dataUrl = await toPng(cardEl, { pixelRatio: 2, cacheBust: true });
+
+        // Compute image size to fit page width
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = reject;
+          img.src = dataUrl;
+        });
+        const ratio = img.height / img.width;
+        let drawW = usableW;
+        let drawH = drawW * ratio;
+        const maxH = pageH - margin * 2;
+        if (drawH > maxH) {
+          drawH = maxH;
+          drawW = drawH / ratio;
+        }
+        const x = (pageW - drawW) / 2;
+        const y = margin;
+
+        if (pageIdx > 0) pdf.addPage();
+        pdf.addImage(dataUrl, "PNG", x, y, drawW, drawH);
+
+        root.unmount();
+      }
+
+      host.innerHTML = "";
+      const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
+      pdf.save(`wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}.pdf`);
+      toast.success(`PDF downloaded · ${chunks.length} page${chunks.length > 1 ? "s" : ""}`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not export PDF");
+    } finally {
+      setBusyPdf(false);
+    }
+  }
+
   if (exams.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface/60 p-10 text-center">
@@ -407,21 +502,47 @@ function ExportPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Export Class Image</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Export Class Results</h1>
           <p className="mt-1 text-sm text-ink-muted">
-            Pick a colour theme and download a single shareable image of all marks.
+            Single-page <strong>PNG</strong> with all students, or paginated <strong>PDF</strong>{" "}
+            (10 students per page).
           </p>
         </div>
-        <Button
-          onClick={handleExport}
-          disabled={!exam}
-          className="rounded-xl bg-brand text-brand-foreground hover:bg-brand/90"
-        >
-          <Download className="mr-1 h-4 w-4" /> Download PNG
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleExport}
+            disabled={!exam}
+            variant="outline"
+            className="rounded-xl"
+          >
+            <Download className="mr-1 h-4 w-4" /> PNG (one page)
+          </Button>
+          <Button
+            onClick={handleExportPdf}
+            disabled={!exam || busyPdf}
+            className="rounded-xl bg-brand text-brand-foreground hover:bg-brand/90"
+          >
+            <FileText className="mr-1 h-4 w-4" />
+            {busyPdf ? "Generating…" : "PDF (10 / page)"}
+          </Button>
+        </div>
       </div>
+
+      {/* Hidden offscreen host for paginated PDF rendering */}
+      <div
+        ref={pdfHostRef}
+        aria-hidden
+        style={{
+          position: "fixed",
+          left: -10000,
+          top: 0,
+          width: 640,
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      />
 
       <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -512,17 +633,20 @@ const ClassCard = ({
   rows,
   theme,
   className,
+  pageInfo,
   ...rest
 }: {
   exam: Exam;
   rows: Row[];
   theme: Theme;
   className: string;
+  pageInfo?: { index: number; total: number; startRank: number };
 } & { ref?: React.Ref<HTMLDivElement> }) => {
   const ref = (rest as { ref?: React.Ref<HTMLDivElement> }).ref;
   const date = formatDate(exam.date);
   const present = rows.filter((r) => typeof r.mark === "number").length;
   const absent = rows.filter((r) => r.mark === "ab").length;
+  const startRank = pageInfo?.startRank ?? 0;
 
   return (
     <div
@@ -551,13 +675,19 @@ const ClassCard = ({
             <div className={cn("text-sm font-bold", theme.headerText)}>/ {exam.totalMarks}</div>
           </div>
         </div>
+        {pageInfo && pageInfo.total > 1 && (
+          <div className="absolute right-3 top-3 rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-bold text-white">
+            Page {pageInfo.index + 1} / {pageInfo.total}
+          </div>
+        )}
       </div>
 
       {/* Body */}
       <div className={cn("px-6 py-6", theme.bodyBg)}>
         <ul className="flex flex-col gap-2">
           {rows.map((r, i) => {
-            const top = i < 3 && typeof r.mark === "number";
+            const absoluteRank = startRank + i;
+            const top = absoluteRank < 3 && typeof r.mark === "number";
             return (
               <li
                 key={r.student.id}
@@ -572,7 +702,7 @@ const ClassCard = ({
                     top ? theme.topRankChip : theme.rankChip,
                   )}
                 >
-                  {i + 1}
+                  {absoluteRank + 1}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div

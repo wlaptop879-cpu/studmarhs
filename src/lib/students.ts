@@ -27,56 +27,20 @@ export type Exam = {
   marks: Record<string, MarkStatus>; // studentId -> status
 };
 
-const CLASSES_KEY = "wisdom-classes-v1";
-const STUDENTS_KEY = "wisdom-students-v3";
-const EXAMS_KEY = "wisdom-exams-v3";
+// Attendance: per-student status + arrival time
+export type AttendanceStatus = "present" | "absent";
+export type AttendanceRecord = {
+  status: AttendanceStatus;
+  time?: string; // "HH:mm" 24h, only if present
+};
+export type AttendanceDay = {
+  id: string;
+  classId: string;
+  date: string; // YYYY-MM-DD
+  records: Record<string, AttendanceRecord>; // studentId -> record
+};
 
 export const CENTRE_NAME = "Wisdom Maths Tuition Centre";
-
-/* ---------- Classes ---------- */
-export function loadClasses(): ClassRoom[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(CLASSES_KEY);
-    return raw ? (JSON.parse(raw) as ClassRoom[]) : [];
-  } catch {
-    return [];
-  }
-}
-export function saveClasses(list: ClassRoom[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(CLASSES_KEY, JSON.stringify(list));
-}
-
-/* ---------- Students ---------- */
-export function loadStudents(): Student[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STUDENTS_KEY);
-    return raw ? (JSON.parse(raw) as Student[]) : [];
-  } catch {
-    return [];
-  }
-}
-export function saveStudents(list: Student[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STUDENTS_KEY, JSON.stringify(list));
-}
-
-/* ---------- Exams ---------- */
-export function loadExams(): Exam[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(EXAMS_KEY);
-    return raw ? (JSON.parse(raw) as Exam[]) : [];
-  } catch {
-    return [];
-  }
-}
-export function saveExams(list: Exam[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(EXAMS_KEY, JSON.stringify(list));
-}
 
 export function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -141,4 +105,22 @@ export function dateInputToIso(v: string): string {
   // treat as local date
   const [y, m, d] = v.split("-").map(Number);
   return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0).toISOString();
+}
+
+// "HH:mm" of current time
+export function nowTimeHHmm(): string {
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+// Format "HH:mm" -> "9:15 AM"
+export function formatTime12(hhmm?: string): string {
+  if (!hhmm) return "—";
+  const [hStr, mStr] = hhmm.split(":");
+  const h = Number(hStr);
+  const m = Number(mStr);
+  if (Number.isNaN(h) || Number.isNaN(m)) return hhmm;
+  const period = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${period}`;
 }

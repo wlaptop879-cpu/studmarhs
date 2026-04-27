@@ -52,12 +52,12 @@ function HomePage() {
             <GraduationCap className="h-3.5 w-3.5" /> Wisdom Maths
           </div>
           <h1 className="mt-2 max-w-xl text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-            Pick a class to enter marks &amp; export beautiful result images.
+            Pick a class to take attendance, enter marks &amp; export beautiful results.
           </h1>
           <p className="mt-3 max-w-lg text-sm opacity-80">
             Create classes like <span className="font-semibold">10, 11, 12</span>. Each class has
-            its own students, mark entries and export images — all stored privately on this
-            device.
+            its own students, attendance log, mark entries and PNG / PDF exports — all securely
+            saved to the cloud and accessible from any device.
           </p>
         </div>
 
