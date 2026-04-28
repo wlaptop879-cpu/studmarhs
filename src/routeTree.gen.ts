@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ClassesRouteImport } from './routes/classes'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CClassIdRouteImport } from './routes/c.$classId'
 import { Route as CClassIdStudentsRouteImport } from './routes/c.$classId.students'
@@ -20,6 +21,11 @@ import { Route as CClassIdAttendanceRouteImport } from './routes/c.$classId.atte
 const ClassesRoute = ClassesRouteImport.update({
   id: '/classes',
   path: '/classes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -55,6 +61,7 @@ const CClassIdAttendanceRoute = CClassIdAttendanceRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/classes': typeof ClassesRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
   '/c/$classId/attendance': typeof CClassIdAttendanceRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/classes': typeof ClassesRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
   '/c/$classId/attendance': typeof CClassIdAttendanceRoute
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/classes': typeof ClassesRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
   '/c/$classId/attendance': typeof CClassIdAttendanceRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/classes'
     | '/c/$classId'
     | '/c/$classId/attendance'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/classes'
     | '/c/$classId'
     | '/c/$classId/attendance'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/classes'
     | '/c/$classId'
     | '/c/$classId/attendance'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   ClassesRoute: typeof ClassesRoute
   CClassIdRoute: typeof CClassIdRouteWithChildren
 }
@@ -124,6 +137,13 @@ declare module '@tanstack/react-router' {
       path: '/classes'
       fullPath: '/classes'
       preLoaderRoute: typeof ClassesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -191,6 +211,7 @@ const CClassIdRouteWithChildren = CClassIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   ClassesRoute: ClassesRoute,
   CClassIdRoute: CClassIdRouteWithChildren,
 }
