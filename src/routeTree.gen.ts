@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ClassesRouteImport } from './routes/classes'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
@@ -18,6 +19,11 @@ import { Route as CClassIdMarksRouteImport } from './routes/c.$classId.marks'
 import { Route as CClassIdExportRouteImport } from './routes/c.$classId.export'
 import { Route as CClassIdAttendanceRouteImport } from './routes/c.$classId.attendance'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClassesRoute = ClassesRouteImport.update({
   id: '/classes',
   path: '/classes',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/classes': typeof ClassesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
   '/c/$classId/attendance': typeof CClassIdAttendanceRoute
   '/c/$classId/export': typeof CClassIdExportRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/classes': typeof ClassesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
   '/c/$classId/attendance': typeof CClassIdAttendanceRoute
   '/c/$classId/export': typeof CClassIdExportRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/classes': typeof ClassesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
   '/c/$classId/attendance': typeof CClassIdAttendanceRoute
   '/c/$classId/export': typeof CClassIdExportRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/classes'
+    | '/reset-password'
     | '/c/$classId'
     | '/c/$classId/attendance'
     | '/c/$classId/export'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/classes'
+    | '/reset-password'
     | '/c/$classId'
     | '/c/$classId/attendance'
     | '/c/$classId/export'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/classes'
+    | '/reset-password'
     | '/c/$classId'
     | '/c/$classId/attendance'
     | '/c/$classId/export'
@@ -127,11 +139,19 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   ClassesRoute: typeof ClassesRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   CClassIdRoute: typeof CClassIdRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/classes': {
       id: '/classes'
       path: '/classes'
@@ -213,6 +233,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   ClassesRoute: ClassesRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   CClassIdRoute: CClassIdRouteWithChildren,
 }
 export const routeTree = rootRouteImport
