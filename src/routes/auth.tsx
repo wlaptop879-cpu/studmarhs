@@ -12,11 +12,40 @@ export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — Wisdom Maths" }] }),
 });
 
+// Fixed staff credentials (single shared login)
+const STAFF_USERNAME = "WISDOM";
+const STAFF_PASSWORD = "MATHS";
+// Supabase requires an email under the hood; we map the username to a fixed synthetic email.
+const STAFF_EMAIL = "wisdom@app.local";
+
+async function ensureStaffAccount() {
+  // Try sign-in; if it fails because the account doesn't exist yet, create it.
+  const first = await supabase.auth.signInWithPassword({
+    email: STAFF_EMAIL,
+    password: STAFF_PASSWORD,
+  });
+  if (!first.error) return;
+
+  const signup = await supabase.auth.signUp({
+    email: STAFF_EMAIL,
+    password: STAFF_PASSWORD,
+  });
+  if (signup.error) throw signup.error;
+
+  // Some projects still require a follow-up sign-in after signup
+  if (!signup.data.session) {
+    const retry = await supabase.auth.signInWithPassword({
+      email: STAFF_EMAIL,
+      password: STAFF_PASSWORD,
+    });
+    if (retry.error) throw retry.error;
+  }
+}
+
 function AuthPage() {
   const nav = useNavigate();
   const { session, loading } = useAuth();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -26,24 +55,16 @@ function AuthPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email || !password) return toast.error("Enter email and password");
+    if (username.trim().toUpperCase() !== STAFF_USERNAME || password !== STAFF_PASSWORD) {
+      toast.error("Incorrect username or password");
+      return;
+    }
     setBusy(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: `${window.location.origin}/` },
-        });
-        if (error) throw error;
-        toast.success("Account created. You're signed in.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        toast.success("Welcome back!");
-      }
+      await ensureStaffAccount();
+      toast.success("Welcome!");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Something went wrong";
+      const msg = err instanceof Error ? err.message : "Sign in failed";
       toast.error(msg);
     } finally {
       setBusy(false);
@@ -58,22 +79,20 @@ function AuthPage() {
             <GraduationCap className="h-5 w-5" />
           </div>
           <h1 className="mt-3 text-xl font-bold tracking-tight">Wisdom Maths</h1>
-          <p className="mt-1 text-xs text-ink-muted">
-            {mode === "signin" ? "Sign in to manage your classes" : "Create a staff account"}
-          </p>
+          <p className="mt-1 text-xs text-ink-muted">Sign in to manage your classes</p>
         </div>
 
         <form onSubmit={submit} className="flex flex-col gap-3">
           <div>
             <label className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
-              Email
+              Username
             </label>
             <Input
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="mt-1 rounded-xl border-border bg-canvas"
+              maxLength={32}
             />
           </div>
           <div>
@@ -82,10 +101,11 @@ function AuthPage() {
             </label>
             <Input
               type="password"
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1 rounded-xl border-border bg-canvas"
+              maxLength={64}
             />
           </div>
           <Button
@@ -93,19 +113,9 @@ function AuthPage() {
             disabled={busy}
             className="mt-2 rounded-xl bg-ink text-surface hover:bg-ink/90"
           >
-            {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+            {busy ? "Please wait…" : "Sign in"}
           </Button>
         </form>
-
-        <button
-          type="button"
-          onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-          className="mt-4 w-full text-center text-xs text-ink-muted hover:text-ink"
-        >
-          {mode === "signin"
-            ? "New here? Create a staff account"
-            : "Already have an account? Sign in"}
-        </button>
       </div>
     </div>
   );
