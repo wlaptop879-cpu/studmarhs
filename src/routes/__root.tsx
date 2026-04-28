@@ -1,7 +1,9 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 
 function NotFoundComponent() {
   return (
@@ -75,9 +77,37 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <>
-      <Outlet />
+    <AuthProvider>
+      <AuthGate>
+        <Outlet />
+      </AuthGate>
       <Toaster richColors position="top-center" />
-    </>
+    </AuthProvider>
   );
+}
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+  const nav = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isAuthRoute = pathname === "/auth";
+
+  useEffect(() => {
+    if (loading) return;
+    if (!session && !isAuthRoute) {
+      nav({ to: "/auth" });
+    } else if (session && isAuthRoute) {
+      nav({ to: "/" });
+    }
+  }, [session, loading, isAuthRoute, nav]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas">
+        <div className="text-sm text-ink-muted">Loading…</div>
+      </div>
+    );
+  }
+  if (!session && !isAuthRoute) return null;
+  return <>{children}</>;
 }
