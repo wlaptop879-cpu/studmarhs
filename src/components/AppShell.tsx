@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { CENTRE_NAME } from "@/lib/students";
-import { Settings, ArrowLeft, Sparkles } from "lucide-react";
+import { Settings, ArrowLeft, Sparkles, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AppShell({
   children,
@@ -12,6 +13,7 @@ export function AppShell({
   classBadge?: string;
 }) {
   const nav = useNavigate();
+  const { signOut, user } = useAuth();
   return (
     <div className="min-h-screen bg-canvas">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/85 backdrop-blur">
@@ -46,12 +48,26 @@ export function AppShell({
               )}
             </div>
           </div>
-          <Link
-            to="/classes"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-canvas px-3 py-1.5 text-xs font-medium text-ink-muted hover:text-ink"
-          >
-            <Settings className="h-3.5 w-3.5" /> Classes
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/classes"
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-canvas px-3 py-1.5 text-xs font-medium text-ink-muted hover:text-ink"
+            >
+              <Settings className="h-3.5 w-3.5" /> Classes
+            </Link>
+            {user && (
+              <button
+                onClick={async () => {
+                  await signOut();
+                  nav({ to: "/auth" });
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-canvas px-3 py-1.5 text-xs font-medium text-ink-muted hover:text-ink"
+                title={user.email ?? "Sign out"}
+              >
+                <LogOut className="h-3.5 w-3.5" /> Sign out
+              </button>
+            )}
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8 lg:py-10">{children}</main>
