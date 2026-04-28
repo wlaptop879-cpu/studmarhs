@@ -110,6 +110,6 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  if (!session && !isAuthRoute) return null;
+  if (!session && !isPublicRoute) return null;
   return <>{children}</>;
 }
