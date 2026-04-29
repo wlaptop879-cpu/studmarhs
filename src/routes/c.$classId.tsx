@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, useLocation, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { useClasses } from "@/hooks/useStudents";
-import { Users, ListChecks, Image as ImageIcon, CalendarCheck } from "lucide-react";
+import { Users, ListChecks, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/c/$classId")({
@@ -26,7 +26,6 @@ function ClassLayout() {
   const tabs = [
     { to: "/c/$classId/students", label: "Students", icon: Users },
     { to: "/c/$classId/marks", label: "Marks", icon: ListChecks },
-    { to: "/c/$classId/attendance", label: "Attendance", icon: CalendarCheck },
     { to: "/c/$classId/export", label: "Export", icon: ImageIcon },
   ] as const;
 

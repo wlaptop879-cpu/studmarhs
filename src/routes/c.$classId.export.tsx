@@ -722,14 +722,14 @@ function StatCard({
 
 type Row = { student: Student; mark: MarkStatus | undefined };
 
-const ClassCard = ({
+function ClassCard({
   exam,
   rows,
   theme,
   className,
   pageInfo,
   compact,
-  ...rest
+  ref,
 }: {
   exam: Exam;
   rows: Row[];
@@ -737,8 +737,8 @@ const ClassCard = ({
   className: string;
   pageInfo?: { index: number; total: number; startRank: number };
   compact?: boolean;
-} & { ref?: React.Ref<HTMLDivElement> }) => {
-  const ref = (rest as { ref?: React.Ref<HTMLDivElement> }).ref;
+  ref?: React.Ref<HTMLDivElement>;
+}) {
   const date = formatDate(exam.date);
   const present = rows.filter((r) => typeof r.mark === "number").length;
   const absent = rows.filter((r) => r.mark === "ab").length;
@@ -829,7 +829,7 @@ const ClassCard = ({
       </div>
     </div>
   );
-};
+}
 
 function MarkPill({
   mark,
