@@ -17,7 +17,6 @@ import { Route as CClassIdRouteImport } from './routes/c.$classId'
 import { Route as CClassIdStudentsRouteImport } from './routes/c.$classId.students'
 import { Route as CClassIdMarksRouteImport } from './routes/c.$classId.marks'
 import { Route as CClassIdExportRouteImport } from './routes/c.$classId.export'
-import { Route as CClassIdAttendanceRouteImport } from './routes/c.$classId.attendance'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -59,11 +58,6 @@ const CClassIdExportRoute = CClassIdExportRouteImport.update({
   path: '/export',
   getParentRoute: () => CClassIdRoute,
 } as any)
-const CClassIdAttendanceRoute = CClassIdAttendanceRouteImport.update({
-  id: '/attendance',
-  path: '/attendance',
-  getParentRoute: () => CClassIdRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -71,7 +65,6 @@ export interface FileRoutesByFullPath {
   '/classes': typeof ClassesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
-  '/c/$classId/attendance': typeof CClassIdAttendanceRoute
   '/c/$classId/export': typeof CClassIdExportRoute
   '/c/$classId/marks': typeof CClassIdMarksRoute
   '/c/$classId/students': typeof CClassIdStudentsRoute
@@ -82,7 +75,6 @@ export interface FileRoutesByTo {
   '/classes': typeof ClassesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
-  '/c/$classId/attendance': typeof CClassIdAttendanceRoute
   '/c/$classId/export': typeof CClassIdExportRoute
   '/c/$classId/marks': typeof CClassIdMarksRoute
   '/c/$classId/students': typeof CClassIdStudentsRoute
@@ -94,7 +86,6 @@ export interface FileRoutesById {
   '/classes': typeof ClassesRoute
   '/reset-password': typeof ResetPasswordRoute
   '/c/$classId': typeof CClassIdRouteWithChildren
-  '/c/$classId/attendance': typeof CClassIdAttendanceRoute
   '/c/$classId/export': typeof CClassIdExportRoute
   '/c/$classId/marks': typeof CClassIdMarksRoute
   '/c/$classId/students': typeof CClassIdStudentsRoute
@@ -107,7 +98,6 @@ export interface FileRouteTypes {
     | '/classes'
     | '/reset-password'
     | '/c/$classId'
-    | '/c/$classId/attendance'
     | '/c/$classId/export'
     | '/c/$classId/marks'
     | '/c/$classId/students'
@@ -118,7 +108,6 @@ export interface FileRouteTypes {
     | '/classes'
     | '/reset-password'
     | '/c/$classId'
-    | '/c/$classId/attendance'
     | '/c/$classId/export'
     | '/c/$classId/marks'
     | '/c/$classId/students'
@@ -129,7 +118,6 @@ export interface FileRouteTypes {
     | '/classes'
     | '/reset-password'
     | '/c/$classId'
-    | '/c/$classId/attendance'
     | '/c/$classId/export'
     | '/c/$classId/marks'
     | '/c/$classId/students'
@@ -201,25 +189,16 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CClassIdExportRouteImport
       parentRoute: typeof CClassIdRoute
     }
-    '/c/$classId/attendance': {
-      id: '/c/$classId/attendance'
-      path: '/attendance'
-      fullPath: '/c/$classId/attendance'
-      preLoaderRoute: typeof CClassIdAttendanceRouteImport
-      parentRoute: typeof CClassIdRoute
-    }
   }
 }
 
 interface CClassIdRouteChildren {
-  CClassIdAttendanceRoute: typeof CClassIdAttendanceRoute
   CClassIdExportRoute: typeof CClassIdExportRoute
   CClassIdMarksRoute: typeof CClassIdMarksRoute
   CClassIdStudentsRoute: typeof CClassIdStudentsRoute
 }
 
 const CClassIdRouteChildren: CClassIdRouteChildren = {
-  CClassIdAttendanceRoute: CClassIdAttendanceRoute,
   CClassIdExportRoute: CClassIdExportRoute,
   CClassIdMarksRoute: CClassIdMarksRoute,
   CClassIdStudentsRoute: CClassIdStudentsRoute,
@@ -239,3 +218,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
