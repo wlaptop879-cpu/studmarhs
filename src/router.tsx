@@ -3,6 +3,11 @@ import { routeTree } from "./routeTree.gen";
 
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
+  // Surface the real error so we can debug from console logs
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.error("[route-error]", error?.message, error?.stack);
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -27,8 +32,8 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
         <p className="mt-2 text-sm text-muted-foreground">
           An unexpected error occurred. Please try again.
         </p>
-        {import.meta.env.DEV && error.message && (
-          <pre className="mt-4 max-h-40 overflow-auto rounded-md bg-muted p-3 text-left font-mono text-xs text-destructive">
+        {error?.message && (
+          <pre className="mt-4 max-h-40 overflow-auto rounded-md bg-muted p-3 text-left font-mono text-xs text-destructive whitespace-pre-wrap break-words">
             {error.message}
           </pre>
         )}
