@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toPng } from "html-to-image";
+import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import { useStudents, useExams, useClasses } from "@/hooks/useStudents";
 import {
@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Download, FileText, Sparkles } from "lucide-react";
+import { Download, FileText, Sparkles, Check, Loader2, ImageDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -41,32 +41,26 @@ type SortId = "high" | "low" | "name";
 type Theme = {
   id: string;
   name: string;
-  // gradient swatches for picker
   swatch: string;
-  // card surface
-  cardBg: string; // tailwind class on outer card
-  // header
-  headerBg: string; // gradient/bg classes for header band
+  cardBg: string;
+  headerBg: string;
   headerText: string;
-  subText: string; // muted text on header
-  // body
+  subText: string;
   bodyBg: string;
   bodyText: string;
   rowBg: string;
-  rowAlt: string; // alternate row
+  rowAlt: string;
   rowText: string;
   rowMuted: string;
-  rankChip: string; // background+text for rank circle
+  rankChip: string;
   topRankChip: string;
   topRowBg: string;
-  // mark pill
-  markHi: string; // 90+
-  markMid: string; // 75+
-  markLow: string; // 50+
+  markHi: string;
+  markMid: string;
+  markLow: string;
   markFail: string;
   markAb: string;
   markNo: string;
-  // border
   divider: string;
 };
 
@@ -79,7 +73,7 @@ const THEMES: Theme[] = [
     headerBg: "bg-gradient-to-br from-orange-300 via-amber-300 to-pink-300",
     headerText: "text-stone-900",
     subText: "text-stone-700/80",
-    bodyBg: "bg-orange-50/50",
+    bodyBg: "bg-orange-50",
     bodyText: "text-stone-900",
     rowBg: "bg-white",
     rowAlt: "bg-orange-50",
@@ -87,7 +81,7 @@ const THEMES: Theme[] = [
     rowMuted: "text-stone-500",
     rankChip: "bg-orange-100 text-orange-900",
     topRankChip: "bg-stone-900 text-white",
-    topRowBg: "bg-amber-100/70",
+    topRowBg: "bg-amber-100",
     markHi: "bg-emerald-200 text-emerald-900",
     markMid: "bg-amber-200 text-amber-900",
     markLow: "bg-orange-200 text-orange-900",
@@ -104,7 +98,7 @@ const THEMES: Theme[] = [
     headerBg: "bg-gradient-to-br from-sky-500 via-cyan-500 to-teal-400",
     headerText: "text-white",
     subText: "text-white/80",
-    bodyBg: "bg-sky-50/60",
+    bodyBg: "bg-sky-50",
     bodyText: "text-slate-900",
     rowBg: "bg-white",
     rowAlt: "bg-sky-50",
@@ -112,7 +106,7 @@ const THEMES: Theme[] = [
     rowMuted: "text-slate-500",
     rankChip: "bg-sky-100 text-sky-900",
     topRankChip: "bg-sky-700 text-white",
-    topRowBg: "bg-cyan-100/70",
+    topRowBg: "bg-cyan-100",
     markHi: "bg-emerald-200 text-emerald-900",
     markMid: "bg-cyan-200 text-cyan-900",
     markLow: "bg-sky-200 text-sky-900",
@@ -129,7 +123,7 @@ const THEMES: Theme[] = [
     headerBg: "bg-gradient-to-br from-emerald-600 via-green-500 to-lime-400",
     headerText: "text-white",
     subText: "text-white/85",
-    bodyBg: "bg-emerald-50/50",
+    bodyBg: "bg-emerald-50",
     bodyText: "text-emerald-950",
     rowBg: "bg-white",
     rowAlt: "bg-emerald-50",
@@ -137,7 +131,7 @@ const THEMES: Theme[] = [
     rowMuted: "text-emerald-700/70",
     rankChip: "bg-emerald-100 text-emerald-900",
     topRankChip: "bg-emerald-800 text-white",
-    topRowBg: "bg-lime-100/70",
+    topRowBg: "bg-lime-100",
     markHi: "bg-emerald-300 text-emerald-950",
     markMid: "bg-lime-200 text-lime-900",
     markLow: "bg-yellow-200 text-yellow-900",
@@ -163,7 +157,7 @@ const THEMES: Theme[] = [
     rankChip: "bg-slate-700 text-slate-200",
     topRankChip: "bg-violet-500 text-white",
     topRowBg: "bg-violet-900/40",
-    markHi: "bg-emerald-400/90 text-emerald-950",
+    markHi: "bg-emerald-400 text-emerald-950",
     markMid: "bg-amber-300 text-amber-950",
     markLow: "bg-orange-300 text-orange-950",
     markFail: "bg-rose-400 text-rose-950",
@@ -179,7 +173,7 @@ const THEMES: Theme[] = [
     headerBg: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-400",
     headerText: "text-white",
     subText: "text-white/85",
-    bodyBg: "bg-rose-50/50",
+    bodyBg: "bg-rose-50",
     bodyText: "text-rose-950",
     rowBg: "bg-white",
     rowAlt: "bg-rose-50",
@@ -187,7 +181,7 @@ const THEMES: Theme[] = [
     rowMuted: "text-rose-700/70",
     rankChip: "bg-rose-100 text-rose-900",
     topRankChip: "bg-rose-700 text-white",
-    topRowBg: "bg-pink-100/70",
+    topRowBg: "bg-pink-100",
     markHi: "bg-emerald-200 text-emerald-900",
     markMid: "bg-amber-200 text-amber-900",
     markLow: "bg-pink-200 text-pink-900",
@@ -203,8 +197,8 @@ const THEMES: Theme[] = [
     cardBg: "bg-white",
     headerBg: "bg-gradient-to-br from-purple-800 via-violet-700 to-amber-400",
     headerText: "text-white",
-    subText: "text-amber-100/90",
-    bodyBg: "bg-violet-50/50",
+    subText: "text-amber-100",
+    bodyBg: "bg-violet-50",
     bodyText: "text-violet-950",
     rowBg: "bg-white",
     rowAlt: "bg-violet-50",
@@ -212,7 +206,7 @@ const THEMES: Theme[] = [
     rowMuted: "text-violet-700/70",
     rankChip: "bg-violet-100 text-violet-900",
     topRankChip: "bg-amber-400 text-violet-950",
-    topRowBg: "bg-amber-100/70",
+    topRowBg: "bg-amber-100",
     markHi: "bg-amber-300 text-amber-950",
     markMid: "bg-violet-300 text-violet-950",
     markLow: "bg-violet-200 text-violet-900",
@@ -254,10 +248,10 @@ const THEMES: Theme[] = [
     headerBg: "bg-gradient-to-br from-blue-200 via-pink-200 to-yellow-200",
     headerText: "text-slate-800",
     subText: "text-slate-600",
-    bodyBg: "bg-blue-50/40",
+    bodyBg: "bg-blue-50",
     bodyText: "text-slate-800",
     rowBg: "bg-white",
-    rowAlt: "bg-pink-50/60",
+    rowAlt: "bg-pink-50",
     rowText: "text-slate-800",
     rowMuted: "text-slate-500",
     rankChip: "bg-pink-100 text-pink-800",
@@ -279,7 +273,7 @@ const THEMES: Theme[] = [
     headerBg: "bg-gradient-to-br from-red-600 via-orange-500 to-yellow-400",
     headerText: "text-white",
     subText: "text-yellow-100",
-    bodyBg: "bg-orange-50/40",
+    bodyBg: "bg-orange-50",
     bodyText: "text-stone-900",
     rowBg: "bg-white",
     rowAlt: "bg-amber-50",
@@ -303,7 +297,7 @@ const THEMES: Theme[] = [
     cardBg: "bg-slate-50",
     headerBg: "bg-gradient-to-br from-slate-800 via-teal-700 to-teal-400",
     headerText: "text-white",
-    subText: "text-teal-100/90",
+    subText: "text-teal-100",
     bodyBg: "bg-slate-50",
     bodyText: "text-slate-900",
     rowBg: "bg-white",
@@ -312,7 +306,7 @@ const THEMES: Theme[] = [
     rowMuted: "text-slate-500",
     rankChip: "bg-teal-100 text-teal-900",
     topRankChip: "bg-slate-900 text-teal-200",
-    topRowBg: "bg-teal-100/70",
+    topRowBg: "bg-teal-100",
     markHi: "bg-teal-300 text-teal-950",
     markMid: "bg-teal-200 text-teal-900",
     markLow: "bg-amber-200 text-amber-900",
@@ -322,6 +316,19 @@ const THEMES: Theme[] = [
     divider: "border-slate-200",
   },
 ];
+
+const PER_PAGE_PDF = 30;
+const CARD_WIDTH = 720;
+
+async function captureNode(node: HTMLElement): Promise<string> {
+  const canvas = await html2canvas(node, {
+    scale: 2.5,
+    backgroundColor: "#ffffff",
+    useCORS: true,
+    logging: false,
+  });
+  return canvas.toDataURL("image/png");
+}
 
 function ExportPage() {
   const { classId } = Route.useParams();
@@ -334,6 +341,7 @@ function ExportPage() {
   const [sort, setSort] = useState<SortId>("high");
   const cardRef = useRef<HTMLDivElement>(null);
   const pdfHostRef = useRef<HTMLDivElement>(null);
+  const [busyPng, setBusyPng] = useState(false);
   const [busyPdf, setBusyPdf] = useState(false);
 
   const cls = classes.find((c) => c.id === classId);
@@ -356,13 +364,11 @@ function ExportPage() {
     });
     list.sort((a, b) => {
       if (sort === "name") return a.student.name.localeCompare(b.student.name);
-      // For "high" order: numbers (high→low), then "no" (didn't write), then "ab" (absent), then unset.
-      // Rank values are designed so larger = earlier when sorting high→low.
       const rank = (m: MarkStatus | undefined) => {
-        if (typeof m === "number") return m + 1000; // numbers always above status codes
-        if (m === "no") return -1; // தேர்வு எழுதவில்லை comes before absent
-        if (m === "ab") return -2; // வரவில்லை last among entered
-        return -3; // not entered
+        if (typeof m === "number") return m + 1000;
+        if (m === "no") return -1;
+        if (m === "ab") return -2;
+        return -3;
       };
       const ra = rank(a.mark);
       const rb = rank(b.mark);
@@ -371,42 +377,71 @@ function ExportPage() {
     return list;
   }, [students, exam, sort]);
 
+  const stats = useMemo(() => {
+    const present = rows.filter((r) => typeof r.mark === "number").length;
+    const absent = rows.filter((r) => r.mark === "ab").length;
+    const numeric = rows
+      .map((r) => r.mark)
+      .filter((m): m is number => typeof m === "number");
+    const top = numeric.length ? Math.max(...numeric) : null;
+    return { total: rows.length, present, absent, top };
+  }, [rows]);
+
   if (!sh || !eh || !ch) return null;
   if (!cls) return null;
 
-  async function handleExport() {
-    if (!cardRef.current || !exam) return;
+  // Render a card offscreen with all rows, then capture as PNG.
+  async function handleExportPng() {
+    if (!exam || !cls || !pdfHostRef.current) return;
+    setBusyPng(true);
     try {
-      const dataUrl = await toPng(cardRef.current, {
-        pixelRatio: 3,
-        cacheBust: true,
+      const host = pdfHostRef.current;
+      host.innerHTML = "";
+      const slot = document.createElement("div");
+      host.appendChild(slot);
+
+      const { createRoot } = await import("react-dom/client");
+      const root = createRoot(slot);
+      await new Promise<void>((resolve) => {
+        root.render(<ClassCard exam={exam!} rows={rows} theme={theme} className={cls!.name} />);
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
+      // small extra wait so fonts and gradients settle
+      await new Promise((r) => setTimeout(r, 120));
+
+      const cardEl = slot.firstElementChild as HTMLElement | null;
+      if (!cardEl) throw new Error("Could not render card");
+
+      const dataUrl = await captureNode(cardEl);
+      root.unmount();
+      host.innerHTML = "";
+
       const link = document.createElement("a");
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
-      link.download = `wisdom-${cls?.name.replace(/\s+/g, "")}-${safe}-${theme.id}.png`;
+      link.download = `wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}-all.png`;
       link.href = dataUrl;
       link.click();
       toast.success("Image downloaded");
     } catch (err) {
       console.error(err);
-      toast.error("Could not export image");
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Could not export image: ${msg}`);
+    } finally {
+      setBusyPng(false);
     }
   }
 
-  // PDF: 10 students per page. We render each chunk into an offscreen card
-  // and capture it as PNG, then place it on a portrait A4 page.
+  // PDF: 30 students per page.
   async function handleExportPdf() {
     if (!exam || !cls || !pdfHostRef.current) return;
     setBusyPdf(true);
     try {
-      const PER_PAGE = 10;
       const chunks: Row[][] = [];
-      for (let i = 0; i < rows.length; i += PER_PAGE) {
-        chunks.push(rows.slice(i, i + PER_PAGE));
+      for (let i = 0; i < rows.length; i += PER_PAGE_PDF) {
+        chunks.push(rows.slice(i, i + PER_PAGE_PDF));
       }
       if (chunks.length === 0) chunks.push([]);
 
-      // A4 portrait
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
@@ -414,46 +449,44 @@ function ExportPage() {
       const usableW = pageW - margin * 2;
 
       const host = pdfHostRef.current;
+      const { createRoot } = await import("react-dom/client");
 
       for (let pageIdx = 0; pageIdx < chunks.length; pageIdx++) {
-        // Mount a card into the host
         host.innerHTML = "";
         const slot = document.createElement("div");
         host.appendChild(slot);
 
-        // Render React into the slot via direct portal would need extra setup;
-        // instead we use a simple imperative path: build via temp React root.
-        // To keep dependencies minimal, we re-use the visible card by toggling rows.
-        // Simpler approach: clone the visible cardRef DOM, then replace its rows.
-        // But cleanest: render via createRoot.
-        const { createRoot } = await import("react-dom/client");
         const root = createRoot(slot);
         await new Promise<void>((resolve) => {
           root.render(
             <ClassCard
-              exam={exam}
+              exam={exam!}
               rows={chunks[pageIdx]}
               theme={theme}
-              className={cls.name}
-              pageInfo={{ index: pageIdx, total: chunks.length, startRank: pageIdx * PER_PAGE }}
+              className={cls!.name}
+              compact
+              pageInfo={{
+                index: pageIdx,
+                total: chunks.length,
+                startRank: pageIdx * PER_PAGE_PDF,
+              }}
             />,
           );
-          // give browser a tick to paint
           requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
         });
+        await new Promise((r) => setTimeout(r, 80));
 
         const cardEl = slot.firstElementChild as HTMLElement | null;
         if (!cardEl) {
           root.unmount();
           continue;
         }
-        const dataUrl = await toPng(cardEl, { pixelRatio: 2, cacheBust: true });
+        const dataUrl = await captureNode(cardEl);
 
-        // Compute image size to fit page width
         const img = new Image();
         await new Promise<void>((resolve, reject) => {
           img.onload = () => resolve();
-          img.onerror = reject;
+          img.onerror = () => reject(new Error("Failed to load page image"));
           img.src = dataUrl;
         });
         const ratio = img.height / img.width;
@@ -479,7 +512,8 @@ function ExportPage() {
       toast.success(`PDF downloaded · ${chunks.length} page${chunks.length > 1 ? "s" : ""}`);
     } catch (err) {
       console.error(err);
-      toast.error("Could not export PDF");
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Could not export PDF: ${msg}`);
     } finally {
       setBusyPdf(false);
     }
@@ -502,35 +536,53 @@ function ExportPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Export Class Results</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Single-page <strong>PNG</strong> with all students, or paginated <strong>PDF</strong>{" "}
-            (10 students per page).
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={handleExport}
-            disabled={!exam}
-            variant="outline"
-            className="rounded-xl"
-          >
-            <Download className="mr-1 h-4 w-4" /> PNG (one page)
-          </Button>
-          <Button
-            onClick={handleExportPdf}
-            disabled={!exam || busyPdf}
-            className="rounded-xl bg-brand text-brand-foreground hover:bg-brand/90"
-          >
-            <FileText className="mr-1 h-4 w-4" />
-            {busyPdf ? "Generating…" : "PDF (10 / page)"}
-          </Button>
+      {/* Hero header + sticky actions */}
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 p-6 text-white shadow-card sm:p-8">
+        <div className="absolute -right-16 -top-16 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute -bottom-20 -left-10 h-60 w-60 rounded-full bg-black/10 blur-3xl" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/80">
+              Result Sheet Studio
+            </div>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+              Export {cls.name} Results
+            </h1>
+            <p className="mt-1 max-w-md text-sm text-white/85">
+              Download a single beautiful <strong>PNG</strong> with all students, or a paginated{" "}
+              <strong>PDF</strong> with 30 students per page.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              onClick={handleExportPng}
+              disabled={!exam || busyPng}
+              className="rounded-xl bg-white text-stone-900 shadow-soft hover:bg-white/90"
+            >
+              {busyPng ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <ImageDown className="mr-1 h-4 w-4" />
+              )}
+              {busyPng ? "Rendering…" : "PNG · all-in-one"}
+            </Button>
+            <Button
+              onClick={handleExportPdf}
+              disabled={!exam || busyPdf}
+              className="rounded-xl bg-stone-900 text-white shadow-soft hover:bg-stone-800"
+            >
+              {busyPdf ? (
+                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-1 h-4 w-4" />
+              )}
+              {busyPdf ? "Generating…" : "PDF · 30 / page"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Hidden offscreen host for paginated PDF rendering */}
+      {/* Hidden offscreen host for paginated/all-in-one rendering */}
       <div
         ref={pdfHostRef}
         aria-hidden
@@ -538,11 +590,25 @@ function ExportPage() {
           position: "fixed",
           left: -10000,
           top: 0,
-          width: 640,
+          width: CARD_WIDTH,
           pointerEvents: "none",
           opacity: 0,
         }}
       />
+
+      {/* Stats */}
+      {exam && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard label="Students" value={stats.total} accent="from-sky-400 to-cyan-300" />
+          <StatCard label="Present" value={stats.present} accent="from-emerald-400 to-lime-300" />
+          <StatCard label="Absent" value={stats.absent} accent="from-rose-400 to-pink-300" />
+          <StatCard
+            label="Top Mark"
+            value={stats.top !== null ? `${stats.top}/${exam.totalMarks}` : "—"}
+            accent="from-amber-400 to-orange-300"
+          />
+        </div>
+      )}
 
       <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -581,37 +647,45 @@ function ExportPage() {
             <Sparkles className="-mt-0.5 mr-1 inline h-3 w-3" />
             Colour theme · {THEMES.length} options
           </Label>
-          <div className="flex flex-wrap gap-2">
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setThemeId(t.id)}
-                className={cn(
-                  "group flex items-center gap-2 rounded-full border px-2 py-1 text-xs font-medium transition-all",
-                  themeId === t.id
-                    ? "border-ink bg-ink text-surface"
-                    : "border-border bg-canvas text-ink-muted hover:text-ink",
-                )}
-                title={t.name}
-              >
-                <span
-                  className="h-5 w-5 rounded-full ring-2 ring-white"
-                  style={{ background: t.swatch }}
-                />
-                <span className="pr-2">{t.name}</span>
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+            {THEMES.map((t) => {
+              const active = themeId === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setThemeId(t.id)}
+                  className={cn(
+                    "group relative flex items-center gap-2 overflow-hidden rounded-2xl border p-2 text-left text-xs font-medium transition-all",
+                    active
+                      ? "border-ink shadow-card ring-2 ring-ink/10"
+                      : "border-border bg-canvas hover:border-ink/30",
+                  )}
+                  title={t.name}
+                >
+                  <span
+                    className="h-9 w-9 shrink-0 rounded-xl ring-2 ring-white shadow-soft"
+                    style={{ background: t.swatch }}
+                  />
+                  <span className="min-w-0 flex-1 truncate pr-1 text-ink">{t.name}</span>
+                  {active && (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-ink text-white">
+                      <Check className="h-3 w-3" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Preview */}
-      <div className="rounded-3xl bg-canvas p-3 ring-1 ring-border sm:p-6">
-        <div className="mb-3 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
-          Live Preview
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-100 via-white to-violet-50 p-3 ring-1 ring-border sm:p-6">
+        <div className="mb-3 flex items-center justify-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-muted">
+          <Download className="h-3 w-3" /> Live Preview
         </div>
         {exam && cls && (
-          <div className="mx-auto w-full max-w-[680px] overflow-x-auto">
+          <div className="mx-auto w-full max-w-[720px] overflow-x-auto">
             <ClassCard
               ref={cardRef}
               exam={exam}
@@ -626,6 +700,26 @@ function ExportPage() {
   );
 }
 
+function StatCard({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string | number;
+  accent: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-surface p-4 shadow-soft">
+      <div className={cn("absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br opacity-30 blur-xl", accent)} />
+      <div className="relative">
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">{label}</div>
+        <div className="mt-1 text-xl font-bold tabular-nums text-ink">{value}</div>
+      </div>
+    </div>
+  );
+}
+
 type Row = { student: Student; mark: MarkStatus | undefined };
 
 const ClassCard = ({
@@ -634,6 +728,7 @@ const ClassCard = ({
   theme,
   className,
   pageInfo,
+  compact,
   ...rest
 }: {
   exam: Exam;
@@ -641,6 +736,7 @@ const ClassCard = ({
   theme: Theme;
   className: string;
   pageInfo?: { index: number; total: number; startRank: number };
+  compact?: boolean;
 } & { ref?: React.Ref<HTMLDivElement> }) => {
   const ref = (rest as { ref?: React.Ref<HTMLDivElement> }).ref;
   const date = formatDate(exam.date);
@@ -652,16 +748,16 @@ const ClassCard = ({
     <div
       ref={ref}
       className={cn("overflow-hidden rounded-3xl shadow-card", theme.cardBg)}
-      style={{ width: 640 }}
+      style={{ width: CARD_WIDTH }}
     >
       {/* Header */}
-      <div className={cn("relative px-8 py-7", theme.headerBg)}>
+      <div className={cn("relative px-8", theme.headerBg, compact ? "py-5" : "py-7")}>
         <div className={cn("text-[10px] font-bold uppercase tracking-[0.28em]", theme.subText)}>
           {CENTRE_NAME}
         </div>
         <div className="mt-2 flex items-end justify-between gap-4">
           <div>
-            <h2 className={cn("text-2xl font-bold leading-tight tracking-tight", theme.headerText)}>
+            <h2 className={cn("font-bold leading-tight tracking-tight", theme.headerText, compact ? "text-xl" : "text-2xl")}>
               {exam.subject}
             </h2>
             <div className={cn("mt-1 text-xs font-medium", theme.subText)}>
@@ -676,15 +772,15 @@ const ClassCard = ({
           </div>
         </div>
         {pageInfo && pageInfo.total > 1 && (
-          <div className="absolute right-3 top-3 rounded-full bg-black/20 px-2 py-0.5 text-[10px] font-bold text-white">
+          <div className="absolute right-3 top-3 rounded-full bg-black/25 px-2 py-0.5 text-[10px] font-bold text-white">
             Page {pageInfo.index + 1} / {pageInfo.total}
           </div>
         )}
       </div>
 
       {/* Body */}
-      <div className={cn("px-6 py-6", theme.bodyBg)}>
-        <ul className="flex flex-col gap-2">
+      <div className={cn(compact ? "px-5 py-4" : "px-6 py-6", theme.bodyBg)}>
+        <ul className={cn("flex flex-col", compact ? "gap-1" : "gap-2")}>
           {rows.map((r, i) => {
             const absoluteRank = startRank + i;
             const top = absoluteRank < 3 && typeof r.mark === "number";
@@ -692,13 +788,15 @@ const ClassCard = ({
               <li
                 key={r.student.id}
                 className={cn(
-                  "flex items-center gap-3 rounded-2xl px-4 py-3",
+                  "flex items-center rounded-2xl",
+                  compact ? "gap-2 px-3 py-1.5" : "gap-3 px-4 py-3",
                   top ? theme.topRowBg : i % 2 === 0 ? theme.rowBg : theme.rowAlt,
                 )}
               >
                 <div
                   className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold tabular-nums",
+                    "flex shrink-0 items-center justify-center rounded-full font-bold tabular-nums",
+                    compact ? "h-7 w-7 text-[11px]" : "h-9 w-9 text-xs",
                     top ? theme.topRankChip : theme.rankChip,
                   )}
                 >
@@ -707,14 +805,15 @@ const ClassCard = ({
                 <div className="min-w-0 flex-1">
                   <div
                     className={cn(
-                      "font-tamil truncate text-base font-semibold leading-tight",
+                      "font-tamil truncate font-semibold leading-tight",
+                      compact ? "text-sm" : "text-base",
                       theme.rowText,
                     )}
                   >
                     {r.student.name}
                   </div>
                 </div>
-                <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} />
+                <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} compact={compact} />
               </li>
             );
           })}
@@ -736,31 +835,24 @@ function MarkPill({
   mark,
   total,
   theme,
+  compact,
 }: {
   mark: MarkStatus | undefined;
   total: number;
   theme: Theme;
+  compact?: boolean;
 }) {
+  const pad = compact ? "px-2 py-0.5 text-[11px]" : "px-3 py-1 text-xs";
   if (mark === "ab") {
     return (
-      <span
-        className={cn(
-          "font-tamil inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
-          theme.markAb,
-        )}
-      >
+      <span className={cn("font-tamil inline-flex items-center rounded-full font-semibold", pad, theme.markAb)}>
         வரவில்லை
       </span>
     );
   }
   if (mark === "no") {
     return (
-      <span
-        className={cn(
-          "font-tamil inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold whitespace-nowrap",
-          theme.markNo,
-        )}
-      >
+      <span className={cn("font-tamil inline-flex items-center rounded-full font-semibold whitespace-nowrap", pad, theme.markNo)}>
         தேர்வு எழுதவில்லை
       </span>
     );
@@ -768,17 +860,12 @@ function MarkPill({
   if (typeof mark === "number") {
     const pct = (mark / total) * 100;
     const tone =
-      pct >= 90
-        ? theme.markHi
-        : pct >= 75
-          ? theme.markMid
-          : pct >= 50
-            ? theme.markLow
-            : theme.markFail;
+      pct >= 90 ? theme.markHi : pct >= 75 ? theme.markMid : pct >= 50 ? theme.markLow : theme.markFail;
     return (
       <span
         className={cn(
-          "inline-flex items-baseline gap-1 rounded-full px-3 py-1 text-sm font-bold tabular-nums",
+          "inline-flex items-baseline gap-1 rounded-full font-bold tabular-nums",
+          compact ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm",
           tone,
         )}
       >
@@ -788,7 +875,7 @@ function MarkPill({
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-xs text-stone-500">
+    <span className={cn("inline-flex items-center rounded-full bg-stone-100 text-stone-500", pad)}>
       —
     </span>
   );
