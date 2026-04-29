@@ -829,7 +829,7 @@ function ClassCard({
       </div>
     </div>
   );
-};
+}
 
 function MarkPill({
   mark,
