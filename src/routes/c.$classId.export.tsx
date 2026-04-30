@@ -343,6 +343,14 @@ function ExportPage() {
   const pdfHostRef = useRef<HTMLDivElement>(null);
   const [busyPng, setBusyPng] = useState(false);
   const [busyPdf, setBusyPdf] = useState(false);
+  type Progress = {
+    kind: "pdf" | "png";
+    phase: "queued" | "rendering" | "composing" | "saving" | "done" | "failed";
+    current: number;
+    total: number;
+    message?: string;
+  };
+  const [progress, setProgress] = useState<Progress | null>(null);
 
   const cls = classes.find((c) => c.id === classId);
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
