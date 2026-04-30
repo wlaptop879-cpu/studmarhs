@@ -402,6 +402,7 @@ function ExportPage() {
   async function handleExportPng() {
     if (!exam || !cls || !pdfHostRef.current) return;
     setBusyPng(true);
+    setProgress({ kind: "png", phase: "queued", current: 0, total: 1, message: "Preparing canvas…" });
     try {
       const host = pdfHostRef.current;
       host.innerHTML = "";
@@ -410,32 +411,37 @@ function ExportPage() {
 
       const { createRoot } = await import("react-dom/client");
       const root = createRoot(slot);
+      setProgress({ kind: "png", phase: "rendering", current: 0, total: 1, message: `Rendering ${rows.length} students…` });
       await new Promise<void>((resolve) => {
         root.render(<ClassCard exam={exam!} rows={rows} theme={theme} className={cls!.name} />);
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
-      // small extra wait so fonts and gradients settle
       await new Promise((r) => setTimeout(r, 120));
 
       const cardEl = slot.firstElementChild as HTMLElement | null;
       if (!cardEl) throw new Error("Could not render card");
 
+      setProgress({ kind: "png", phase: "composing", current: 1, total: 1, message: "Capturing image…" });
       const dataUrl = await captureNode(cardEl);
       root.unmount();
       host.innerHTML = "";
 
+      setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
       const link = document.createElement("a");
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
       link.download = `wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}-all.png`;
       link.href = dataUrl;
       link.click();
+      setProgress({ kind: "png", phase: "done", current: 1, total: 1, message: "Done!" });
       toast.success("Image downloaded");
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : "Unknown error";
+      setProgress((p) => (p ? { ...p, phase: "failed", message: msg } : null));
       toast.error(`Could not export image: ${msg}`);
     } finally {
       setBusyPng(false);
+      setTimeout(() => setProgress(null), 1200);
     }
   }
 
@@ -450,6 +456,7 @@ function ExportPage() {
       }
       if (chunks.length === 0) chunks.push([]);
 
+      setProgress({ kind: "pdf", phase: "queued", current: 0, total: chunks.length, message: "Queued…" });
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
