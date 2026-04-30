@@ -5,8 +5,6 @@ import {
   type Student,
   type Exam,
   type MarkStatus,
-  type AttendanceDay,
-  type AttendanceRecord,
 } from "@/lib/students";
 
 /* =====================================================================
@@ -36,7 +34,7 @@ export function useClasses() {
     })();
 
     const channel = supabase
-      .channel("classes-rt")
+      .channel(`classes-rt-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "classes" },
@@ -114,7 +112,7 @@ export function useStudents(classId?: string) {
     })();
 
     const channel = supabase
-      .channel("students-rt")
+      .channel(`students-rt-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "students" },
@@ -228,7 +226,7 @@ export function useExams(classId?: string) {
     })();
 
     const channel = supabase
-      .channel("exams-rt")
+      .channel(`exams-rt-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "exams" },
@@ -314,136 +312,4 @@ export function useExams(classId?: string) {
   }, []);
 
   return { exams: inClass, allExams: exams, createExam, updateExam, setMark, deleteExam, hydrated };
-}
-
-/* ----------------- Attendance ----------------- */
-function rowToAttendance(r: {
-  id: string;
-  class_id: string;
-  attendance_date: string;
-  records: unknown;
-}): AttendanceDay {
-  return {
-    id: r.id,
-    classId: r.class_id,
-    date: r.attendance_date,
-    records: (r.records as Record<string, AttendanceRecord>) ?? {},
-  };
-}
-
-export function useAttendance(classId: string, date: string) {
-  const [day, setDay] = useState<AttendanceDay | null>(null);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    let alive = true;
-    setHydrated(false);
-    (async () => {
-      const { data } = await supabase
-        .from("attendance")
-        .select("*")
-        .eq("class_id", classId)
-        .eq("attendance_date", date)
-        .maybeSingle();
-      if (!alive) return;
-      setDay(data ? rowToAttendance(data) : null);
-      setHydrated(true);
-    })();
-
-    const channel = supabase
-      .channel(`att-${classId}-${date}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "attendance",
-          filter: `class_id=eq.${classId}`,
-        },
-        async () => {
-          const { data } = await supabase
-            .from("attendance")
-            .select("*")
-            .eq("class_id", classId)
-            .eq("attendance_date", date)
-            .maybeSingle();
-          setDay(data ? rowToAttendance(data) : null);
-        },
-      )
-      .subscribe();
-
-    return () => {
-      alive = false;
-      supabase.removeChannel(channel);
-    };
-  }, [classId, date]);
-
-  const setRecord = useCallback(
-    async (studentId: string, rec: AttendanceRecord | null) => {
-      const records = { ...(day?.records ?? {}) };
-      if (rec === null) delete records[studentId];
-      else records[studentId] = rec;
-
-      // Optimistic
-      setDay((prev) =>
-        prev
-          ? { ...prev, records }
-          : { id: "_tmp", classId, date, records },
-      );
-
-      await supabase
-        .from("attendance")
-        .upsert(
-          {
-            class_id: classId,
-            attendance_date: date,
-            records,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "class_id,attendance_date" },
-        );
-    },
-    [classId, date, day],
-  );
-
-  const markAllPresent = useCallback(
-    async (studentIds: string[], time: string) => {
-      const records: Record<string, AttendanceRecord> = { ...(day?.records ?? {}) };
-      for (const sid of studentIds) {
-        if (!records[sid]) records[sid] = { status: "present", time };
-      }
-      setDay((prev) =>
-        prev ? { ...prev, records } : { id: "_tmp", classId, date, records },
-      );
-      await supabase
-        .from("attendance")
-        .upsert(
-          {
-            class_id: classId,
-            attendance_date: date,
-            records,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "class_id,attendance_date" },
-        );
-    },
-    [classId, date, day],
-  );
-
-  const clearAll = useCallback(async () => {
-    setDay((prev) => (prev ? { ...prev, records: {} } : null));
-    await supabase
-      .from("attendance")
-      .upsert(
-        {
-          class_id: classId,
-          attendance_date: date,
-          records: {},
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "class_id,attendance_date" },
-      );
-  }, [classId, date]);
-
-  return { day, hydrated, setRecord, markAllPresent, clearAll };
 }

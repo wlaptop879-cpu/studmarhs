@@ -317,7 +317,7 @@ const THEMES: Theme[] = [
   },
 ];
 
-const PER_PAGE_PDF = 30;
+const PER_PAGE_PDF = 10;
 const CARD_WIDTH = 720;
 
 async function captureNode(node: HTMLElement): Promise<string> {
@@ -431,7 +431,7 @@ function ExportPage() {
     }
   }
 
-  // PDF: 30 students per page.
+  // PDF: 10 students per page.
   async function handleExportPdf() {
     if (!exam || !cls || !pdfHostRef.current) return;
     setBusyPdf(true);
@@ -550,7 +550,7 @@ function ExportPage() {
             </h1>
             <p className="mt-1 max-w-md text-sm text-white/85">
               Download a single beautiful <strong>PNG</strong> with all students, or a paginated{" "}
-              <strong>PDF</strong> with 30 students per page.
+              <strong>PDF</strong> with 10 students per page.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -576,7 +576,7 @@ function ExportPage() {
               ) : (
                 <FileText className="mr-1 h-4 w-4" />
               )}
-              {busyPdf ? "Generating…" : "PDF · 30 / page"}
+              {busyPdf ? "Generating…" : "PDF · 10 / page"}
             </Button>
           </div>
         </div>
