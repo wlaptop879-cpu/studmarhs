@@ -27,19 +27,6 @@ export type Exam = {
   marks: Record<string, MarkStatus>; // studentId -> status
 };
 
-// Attendance: per-student status + arrival time
-export type AttendanceStatus = "present" | "absent";
-export type AttendanceRecord = {
-  status: AttendanceStatus;
-  time?: string; // "HH:mm" 24h, only if present
-};
-export type AttendanceDay = {
-  id: string;
-  classId: string;
-  date: string; // YYYY-MM-DD
-  records: Record<string, AttendanceRecord>; // studentId -> record
-};
-
 export const CENTRE_NAME = "Wisdom Maths Tuition Centre";
 
 export function uid() {
