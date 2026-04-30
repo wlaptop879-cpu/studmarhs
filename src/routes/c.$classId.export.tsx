@@ -343,6 +343,14 @@ function ExportPage() {
   const pdfHostRef = useRef<HTMLDivElement>(null);
   const [busyPng, setBusyPng] = useState(false);
   const [busyPdf, setBusyPdf] = useState(false);
+  type Progress = {
+    kind: "pdf" | "png";
+    phase: "queued" | "rendering" | "composing" | "saving" | "done" | "failed";
+    current: number;
+    total: number;
+    message?: string;
+  };
+  const [progress, setProgress] = useState<Progress | null>(null);
 
   const cls = classes.find((c) => c.id === classId);
   const theme = THEMES.find((t) => t.id === themeId) ?? THEMES[0];
@@ -394,6 +402,7 @@ function ExportPage() {
   async function handleExportPng() {
     if (!exam || !cls || !pdfHostRef.current) return;
     setBusyPng(true);
+    setProgress({ kind: "png", phase: "queued", current: 0, total: 1, message: "Preparing canvas…" });
     try {
       const host = pdfHostRef.current;
       host.innerHTML = "";
@@ -402,32 +411,37 @@ function ExportPage() {
 
       const { createRoot } = await import("react-dom/client");
       const root = createRoot(slot);
+      setProgress({ kind: "png", phase: "rendering", current: 0, total: 1, message: `Rendering ${rows.length} students…` });
       await new Promise<void>((resolve) => {
         root.render(<ClassCard exam={exam!} rows={rows} theme={theme} className={cls!.name} />);
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
-      // small extra wait so fonts and gradients settle
       await new Promise((r) => setTimeout(r, 120));
 
       const cardEl = slot.firstElementChild as HTMLElement | null;
       if (!cardEl) throw new Error("Could not render card");
 
+      setProgress({ kind: "png", phase: "composing", current: 1, total: 1, message: "Capturing image…" });
       const dataUrl = await captureNode(cardEl);
       root.unmount();
       host.innerHTML = "";
 
+      setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
       const link = document.createElement("a");
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
       link.download = `wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}-all.png`;
       link.href = dataUrl;
       link.click();
+      setProgress({ kind: "png", phase: "done", current: 1, total: 1, message: "Done!" });
       toast.success("Image downloaded");
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : "Unknown error";
+      setProgress((p) => (p ? { ...p, phase: "failed", message: msg } : null));
       toast.error(`Could not export image: ${msg}`);
     } finally {
       setBusyPng(false);
+      setTimeout(() => setProgress(null), 1200);
     }
   }
 
@@ -442,6 +456,7 @@ function ExportPage() {
       }
       if (chunks.length === 0) chunks.push([]);
 
+      setProgress({ kind: "pdf", phase: "queued", current: 0, total: chunks.length, message: "Queued…" });
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
@@ -452,6 +467,13 @@ function ExportPage() {
       const { createRoot } = await import("react-dom/client");
 
       for (let pageIdx = 0; pageIdx < chunks.length; pageIdx++) {
+        setProgress({
+          kind: "pdf",
+          phase: "rendering",
+          current: pageIdx + 1,
+          total: chunks.length,
+          message: `Rendering page ${pageIdx + 1} of ${chunks.length}…`,
+        });
         host.innerHTML = "";
         const slot = document.createElement("div");
         host.appendChild(slot);
@@ -481,6 +503,13 @@ function ExportPage() {
           root.unmount();
           continue;
         }
+        setProgress({
+          kind: "pdf",
+          phase: "composing",
+          current: pageIdx + 1,
+          total: chunks.length,
+          message: `Capturing page ${pageIdx + 1} of ${chunks.length}…`,
+        });
         const dataUrl = await captureNode(cardEl);
 
         const img = new Image();
@@ -507,15 +536,31 @@ function ExportPage() {
       }
 
       host.innerHTML = "";
+      setProgress({
+        kind: "pdf",
+        phase: "saving",
+        current: chunks.length,
+        total: chunks.length,
+        message: "Saving PDF file…",
+      });
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
       pdf.save(`wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}.pdf`);
+      setProgress({
+        kind: "pdf",
+        phase: "done",
+        current: chunks.length,
+        total: chunks.length,
+        message: "Done!",
+      });
       toast.success(`PDF downloaded · ${chunks.length} page${chunks.length > 1 ? "s" : ""}`);
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : "Unknown error";
+      setProgress((p) => (p ? { ...p, phase: "failed", message: msg } : null));
       toast.error(`Could not export PDF: ${msg}`);
     } finally {
       setBusyPdf(false);
+      setTimeout(() => setProgress(null), 1400);
     }
   }
 
@@ -534,8 +579,101 @@ function ExportPage() {
     );
   }
 
+  const pct = progress
+    ? progress.phase === "queued"
+      ? 5
+      : progress.phase === "done" || progress.phase === "failed"
+        ? 100
+        : Math.min(98, Math.round((progress.current / Math.max(progress.total, 1)) * 100))
+    : 0;
+
   return (
     <div className="flex flex-col gap-6">
+      {progress && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-900 to-violet-950 p-6 text-white shadow-card">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-card">
+                {progress.phase === "done" ? (
+                  <Check className="h-6 w-6" />
+                ) : progress.phase === "failed" ? (
+                  <span className="text-lg font-bold">!</span>
+                ) : (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-violet-200/80">
+                  {progress.kind === "pdf" ? "Generating PDF" : "Generating Image"}
+                </div>
+                <div className="mt-0.5 truncate text-sm font-semibold">
+                  {progress.phase === "queued" && "Queued — preparing job"}
+                  {progress.phase === "rendering" &&
+                    (progress.kind === "pdf"
+                      ? `Rendering page ${progress.current} of ${progress.total}`
+                      : "Rendering layout")}
+                  {progress.phase === "composing" && "Capturing canvas"}
+                  {progress.phase === "saving" && "Saving file"}
+                  {progress.phase === "done" && "Export complete"}
+                  {progress.phase === "failed" && "Export failed"}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold tabular-nums">{pct}%</div>
+                {progress.kind === "pdf" && (
+                  <div className="text-[10px] uppercase tracking-wider text-violet-200/70">
+                    {progress.current}/{progress.total} pages
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all duration-300 ease-out",
+                  progress.phase === "failed"
+                    ? "bg-gradient-to-r from-rose-500 to-red-500"
+                    : "bg-gradient-to-r from-emerald-400 via-violet-400 to-fuchsia-500",
+                )}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+
+            <div className="mt-4 grid grid-cols-4 gap-1.5 text-[10px] font-semibold uppercase tracking-wider">
+              {(["queued", "rendering", "composing", "saving"] as const).map((step) => {
+                const order = ["queued", "rendering", "composing", "saving", "done"];
+                const currentIdx = order.indexOf(progress.phase);
+                const stepIdx = order.indexOf(step);
+                const active = stepIdx <= currentIdx || progress.phase === "done";
+                return (
+                  <div
+                    key={step}
+                    className={cn(
+                      "rounded-lg px-2 py-1.5 text-center transition-colors",
+                      active ? "bg-white/15 text-white" : "bg-white/5 text-white/40",
+                    )}
+                  >
+                    {step}
+                  </div>
+                );
+              })}
+            </div>
+
+            {progress.message && (
+              <p
+                className={cn(
+                  "mt-4 text-xs",
+                  progress.phase === "failed" ? "text-rose-300" : "text-violet-100/80",
+                )}
+              >
+                {progress.message}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Hero header + sticky actions */}
       <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-violet-500 via-fuchsia-500 to-orange-400 p-6 text-white shadow-card sm:p-8">
         <div className="absolute -right-16 -top-16 h-60 w-60 rounded-full bg-white/10 blur-3xl" />
