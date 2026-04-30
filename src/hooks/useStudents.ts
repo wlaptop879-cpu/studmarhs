@@ -5,8 +5,6 @@ import {
   type Student,
   type Exam,
   type MarkStatus,
-  type AttendanceDay,
-  type AttendanceRecord,
 } from "@/lib/students";
 
 /* =====================================================================
@@ -36,7 +34,7 @@ export function useClasses() {
     })();
 
     const channel = supabase
-      .channel("classes-rt")
+      .channel(`classes-rt-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "classes" },
@@ -114,7 +112,7 @@ export function useStudents(classId?: string) {
     })();
 
     const channel = supabase
-      .channel("students-rt")
+      .channel(`students-rt-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "students" },
@@ -228,7 +226,7 @@ export function useExams(classId?: string) {
     })();
 
     const channel = supabase
-      .channel("exams-rt")
+      .channel(`exams-rt-${crypto.randomUUID()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "exams" },
