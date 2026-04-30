@@ -467,6 +467,13 @@ function ExportPage() {
       const { createRoot } = await import("react-dom/client");
 
       for (let pageIdx = 0; pageIdx < chunks.length; pageIdx++) {
+        setProgress({
+          kind: "pdf",
+          phase: "rendering",
+          current: pageIdx + 1,
+          total: chunks.length,
+          message: `Rendering page ${pageIdx + 1} of ${chunks.length}…`,
+        });
         host.innerHTML = "";
         const slot = document.createElement("div");
         host.appendChild(slot);
@@ -496,6 +503,13 @@ function ExportPage() {
           root.unmount();
           continue;
         }
+        setProgress({
+          kind: "pdf",
+          phase: "composing",
+          current: pageIdx + 1,
+          total: chunks.length,
+          message: `Capturing page ${pageIdx + 1} of ${chunks.length}…`,
+        });
         const dataUrl = await captureNode(cardEl);
 
         const img = new Image();
@@ -522,15 +536,31 @@ function ExportPage() {
       }
 
       host.innerHTML = "";
+      setProgress({
+        kind: "pdf",
+        phase: "saving",
+        current: chunks.length,
+        total: chunks.length,
+        message: "Saving PDF file…",
+      });
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
       pdf.save(`wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}.pdf`);
+      setProgress({
+        kind: "pdf",
+        phase: "done",
+        current: chunks.length,
+        total: chunks.length,
+        message: "Done!",
+      });
       toast.success(`PDF downloaded · ${chunks.length} page${chunks.length > 1 ? "s" : ""}`);
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : "Unknown error";
+      setProgress((p) => (p ? { ...p, phase: "failed", message: msg } : null));
       toast.error(`Could not export PDF: ${msg}`);
     } finally {
       setBusyPdf(false);
+      setTimeout(() => setProgress(null), 1400);
     }
   }
 
