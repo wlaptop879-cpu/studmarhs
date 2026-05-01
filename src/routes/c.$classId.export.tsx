@@ -232,7 +232,7 @@ function ExportPage() {
   const { students, hydrated: sh } = useStudents(classId);
   const { exams, hydrated: eh } = useExams(classId);
   const [activeId, setActiveId] = useState<string>(examId);
-  const [themeId, setThemeId] = useState<string>("sunrise");
+  const [themeId, setThemeId] = useState<string>("azure");
   const [sort, setSort] = useState<SortId>("high");
   const cardRef = useRef<HTMLDivElement>(null);
   const pdfHostRef = useRef<HTMLDivElement>(null);
