@@ -776,139 +776,268 @@ function ClassCard({
   const present = rows.filter((r) => typeof r.mark === "number").length;
   const absent = rows.filter((r) => r.mark === "ab").length;
   const startRank = pageInfo?.startRank ?? 0;
+  const headerGradient = `linear-gradient(90deg, ${theme.gradFrom}, ${theme.gradTo})`;
 
   return (
     <div
       ref={ref}
-      className={cn("overflow-hidden rounded-3xl shadow-card", theme.cardBg)}
-      style={{ width: CARD_WIDTH }}
+      style={{ width: CARD_WIDTH, backgroundColor: theme.pageBg }}
+      className="overflow-hidden rounded-[28px] shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]"
     >
-      {/* Header */}
-      <div className={cn("relative px-8", theme.headerBg, compact ? "py-5" : "py-7")}>
-        <div className={cn("text-[10px] font-bold uppercase tracking-[0.28em]", theme.subText)}>
+      {/* Top blue gradient header bar with logo + ribbon */}
+      <div
+        className="relative flex items-center px-7 py-5"
+        style={{ background: headerGradient }}
+      >
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30">
+          <BookOpen className="h-6 w-6 text-white" strokeWidth={2.2} />
+        </div>
+        <div className="ml-4 text-[20px] font-bold tracking-tight text-white">
           {CENTRE_NAME}
         </div>
-        <div className="mt-2 flex items-end justify-between gap-4">
-          <div>
-            <h2 className={cn("font-bold leading-tight tracking-tight", theme.headerText, compact ? "text-xl" : "text-2xl")}>
-              {exam.subject}
-            </h2>
-            <div className={cn("mt-1 text-xs font-medium", theme.subText)}>
-              Class · <span className={theme.headerText}>{className}</span>
-            </div>
-          </div>
-          <div className={cn("text-right text-[11px]", theme.subText)}>
-            <div>Date</div>
-            <div className={cn("text-sm font-bold", theme.headerText)}>{date}</div>
-            <div className="mt-1">Total</div>
-            <div className={cn("text-sm font-bold", theme.headerText)}>/ {exam.totalMarks}</div>
+
+        {/* Ribbon badge top-right */}
+        <div className="absolute right-6 -bottom-3">
+          <div
+            className="flex h-16 w-14 flex-col items-center justify-start pt-2 text-white shadow-lg"
+            style={{
+              background: theme.ribbon,
+              clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)",
+            }}
+          >
+            <Star className="h-6 w-6" fill="white" strokeWidth={1.5} />
           </div>
         </div>
+
         {pageInfo && pageInfo.total > 1 && (
-          <div className="absolute right-3 top-3 rounded-full bg-black/25 px-2 py-0.5 text-[10px] font-bold text-white">
+          <div className="absolute right-24 top-3 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
             Page {pageInfo.index + 1} / {pageInfo.total}
           </div>
         )}
       </div>
 
-      {/* Body */}
-      <div className={cn(compact ? "px-5 py-4" : "px-6 py-6", theme.bodyBg)}>
-        <ul className={cn("flex flex-col", compact ? "gap-1" : "gap-2")}>
-          {rows.map((r, i) => {
-            const absoluteRank = startRank + i;
-            const top = absoluteRank < 3 && typeof r.mark === "number";
-            return (
-              <li
-                key={r.student.id}
-                className={cn(
-                  "flex items-center rounded-2xl",
-                  compact ? "gap-2 px-3 py-1.5" : "gap-3 px-4 py-3",
-                  top ? theme.topRowBg : i % 2 === 0 ? theme.rowBg : theme.rowAlt,
-                )}
-              >
+      {/* Body white area */}
+      <div className="bg-white px-8 pb-6 pt-7">
+        {/* Title row: subject huge on left, stats card on right */}
+        <div className="flex items-start justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <h2
+              className={cn(
+                "font-bold tracking-tight text-slate-900",
+                compact ? "text-3xl" : "text-5xl",
+              )}
+            >
+              {exam.subject}
+            </h2>
+
+            {/* Info chips row */}
+            <div className="mt-5 flex flex-wrap items-center gap-x-7 gap-y-3">
+              <InfoChip
+                icon={<GraduationCap className="h-5 w-5" style={{ color: theme.accent }} />}
+                bg={theme.accentSoft}
+                label="Class"
+                value={className}
+              />
+              <InfoChip
+                icon={<Calendar className="h-5 w-5" style={{ color: theme.accent }} />}
+                bg={theme.accentSoft}
+                label="Date"
+                value={date}
+              />
+              <InfoChip
+                icon={<ClipboardList className="h-5 w-5" style={{ color: theme.accent }} />}
+                bg={theme.accentSoft}
+                label="Total"
+                value={`/ ${exam.totalMarks}`}
+              />
+            </div>
+          </div>
+
+          {/* Stats card */}
+          <div className="flex shrink-0 items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-full"
+              style={{ background: theme.accentSoft }}
+            >
+              <Trophy className="h-6 w-6" style={{ color: theme.accent }} />
+            </div>
+            <div className="flex flex-col gap-0.5 text-[13px] leading-tight">
+              <div>
+                <span className="text-base font-bold" style={{ color: theme.accent }}>
+                  {rows.length}
+                </span>{" "}
+                <span className="text-slate-600">students</span>
+              </div>
+              <div>
+                <span className="text-base font-bold text-emerald-600">{present}</span>{" "}
+                <span className="text-slate-600">present</span>
+              </div>
+              <div>
+                <span className="text-base font-bold text-rose-600">{absent}</span>{" "}
+                <span className="text-slate-600">absent</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="mt-7 overflow-hidden rounded-2xl bg-slate-50/70 ring-1 ring-slate-200/70">
+          {/* Table header */}
+          <div className="grid grid-cols-[80px_1fr_120px_140px] items-center px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+            <div>Rank</div>
+            <div>Student Name</div>
+            <div className="text-right">Score</div>
+            <div className="text-right">Percentage</div>
+          </div>
+
+          <div className="bg-white">
+            {rows.map((r, i) => {
+              const absoluteRank = startRank + i;
+              const medal =
+                absoluteRank === 0
+                  ? theme.gold
+                  : absoluteRank === 1
+                    ? theme.silver
+                    : absoluteRank === 2
+                      ? theme.bronze
+                      : null;
+              return (
                 <div
+                  key={r.student.id}
                   className={cn(
-                    "flex shrink-0 items-center justify-center rounded-full font-bold tabular-nums",
-                    compact ? "h-7 w-7 text-[11px]" : "h-9 w-9 text-xs",
-                    top ? theme.topRankChip : theme.rankChip,
+                    "grid grid-cols-[80px_1fr_120px_140px] items-center border-t border-slate-100 px-5",
+                    compact ? "py-2.5" : "py-3.5",
                   )}
                 >
-                  {absoluteRank + 1}
-                </div>
-                <div className="min-w-0 flex-1">
+                  {/* Rank medal */}
+                  <div className="flex items-center">
+                    {medal ? (
+                      <div className="relative">
+                        <div
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white shadow"
+                          style={{ background: medal }}
+                        >
+                          {absoluteRank + 1}
+                        </div>
+                        <Award
+                          className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-4 w-4"
+                          style={{ color: medal }}
+                          fill={medal}
+                          strokeWidth={1.5}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+                        {absoluteRank + 1}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name */}
                   <div
                     className={cn(
-                      "font-tamil truncate font-semibold leading-tight",
-                      compact ? "text-sm" : "text-base",
-                      theme.rowText,
+                      "font-tamil truncate font-bold text-slate-900",
+                      compact ? "text-base" : "text-lg",
                     )}
                   >
                     {r.student.name}
                   </div>
+
+                  {/* Score */}
+                  <div className="text-right text-sm font-semibold text-slate-700 tabular-nums">
+                    <ScoreText mark={r.mark} total={exam.totalMarks} />
+                  </div>
+
+                  {/* Percentage pill */}
+                  <div className="flex justify-end">
+                    <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} />
+                  </div>
                 </div>
-                <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} compact={compact} />
-              </li>
-            );
-          })}
-        </ul>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Footer */}
-        <div className={cn("mt-6 flex items-center justify-between border-t pt-4 text-[10px] uppercase tracking-[0.22em]", theme.divider, theme.rowMuted)}>
-          <span>
-            {rows.length} students · {present} present · {absent} absent
+        <div className="mt-5 flex items-center gap-2 text-sm">
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-full"
+            style={{ background: theme.accentSoft }}
+          >
+            <Star className="h-3.5 w-3.5" style={{ color: theme.accent }} fill="currentColor" />
+          </div>
+          <span className="font-bold" style={{ color: theme.accent }}>
+            Wisdom Maths
           </span>
-          <span>Wisdom Maths · Result Sheet</span>
+          <span className="text-slate-400">·</span>
+          <span className="text-slate-500">Result Sheet</span>
         </div>
       </div>
     </div>
   );
 }
 
+function InfoChip({
+  icon,
+  bg,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  bg: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-full"
+        style={{ background: bg }}
+      >
+        {icon}
+      </div>
+      <div className="leading-tight">
+        <div className="text-xs font-medium text-slate-500">{label}</div>
+        <div className="text-base font-bold text-slate-900">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function ScoreText({ mark, total }: { mark: MarkStatus | undefined; total: number }) {
+  if (mark === "ab") return <span className="font-tamil text-rose-600">வரவில்லை</span>;
+  if (mark === "no") return <span className="font-tamil text-slate-500">—</span>;
+  if (typeof mark === "number")
+    return (
+      <>
+        {mark} <span className="text-slate-400">/ {total}</span>
+      </>
+    );
+  return <span className="text-slate-400">—</span>;
+}
+
 function MarkPill({
   mark,
   total,
   theme,
-  compact,
 }: {
   mark: MarkStatus | undefined;
   total: number;
   theme: Theme;
-  compact?: boolean;
 }) {
-  const pad = compact ? "px-2 py-0.5 text-[11px]" : "px-3 py-1 text-xs";
-  if (mark === "ab") {
-    return (
-      <span className={cn("font-tamil inline-flex items-center rounded-full font-semibold", pad, theme.markAb)}>
-        வரவில்லை
-      </span>
-    );
-  }
-  if (mark === "no") {
-    return (
-      <span className={cn("font-tamil inline-flex items-center rounded-full font-semibold whitespace-nowrap", pad, theme.markNo)}>
-        தேர்வு எழுதவில்லை
-      </span>
-    );
-  }
   if (typeof mark === "number") {
     const pct = (mark / total) * 100;
-    const tone =
-      pct >= 90 ? theme.markHi : pct >= 75 ? theme.markMid : pct >= 50 ? theme.markLow : theme.markFail;
     return (
       <span
-        className={cn(
-          "inline-flex items-baseline gap-1 rounded-full font-bold tabular-nums",
-          compact ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm",
-          tone,
-        )}
+        className="inline-flex items-center rounded-full px-3 py-1 text-sm font-bold tabular-nums"
+        style={{ background: theme.accentSoft, color: theme.accentText }}
       >
-        {mark}
-        <span className="text-[10px] font-medium opacity-70">/ {total}</span>
+        {pct.toFixed(2)}%
       </span>
     );
   }
   return (
-    <span className={cn("inline-flex items-center rounded-full bg-stone-100 text-stone-500", pad)}>
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-400">
       —
     </span>
   );
