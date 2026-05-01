@@ -784,33 +784,30 @@ function ClassCard({
       style={{ width: CARD_WIDTH, backgroundColor: theme.pageBg }}
       className="overflow-hidden rounded-[28px] shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]"
     >
-      {/* Top blue gradient header bar with logo + ribbon */}
+      {/* Top gradient header bar: education icon + title + trophy badge */}
       <div
-        className="relative flex items-center px-7 py-5"
+        className="relative flex items-center justify-between px-7 py-5"
         style={{ background: headerGradient }}
       >
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30">
-          <BookOpen className="h-6 w-6 text-white" strokeWidth={2.2} />
-        </div>
-        <div className="ml-4 text-[20px] font-bold tracking-tight text-white">
-          {CENTRE_NAME}
-        </div>
-
-        {/* Ribbon badge top-right */}
-        <div className="absolute right-6 -bottom-3">
-          <div
-            className="flex h-16 w-14 flex-col items-center justify-start pt-2 text-white shadow-lg"
-            style={{
-              background: theme.ribbon,
-              clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)",
-            }}
-          >
-            <Star className="h-6 w-6" fill="white" strokeWidth={1.5} />
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 ring-1 ring-white/30 backdrop-blur-sm">
+            <GraduationCap className="h-7 w-7 text-white" strokeWidth={2.2} />
+          </div>
+          <div className="text-[20px] font-bold tracking-tight text-white truncate">
+            {CENTRE_NAME}
           </div>
         </div>
 
+        {/* Trophy badge top-right */}
+        <div
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 ring-1 ring-white/30 backdrop-blur-sm"
+          style={{ boxShadow: "0 8px 20px -8px rgba(0,0,0,0.3)" }}
+        >
+          <Trophy className="h-6 w-6 text-white" fill="rgba(255,255,255,0.35)" strokeWidth={2} />
+        </div>
+
         {pageInfo && pageInfo.total > 1 && (
-          <div className="absolute right-24 top-3 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-1.5 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
             Page {pageInfo.index + 1} / {pageInfo.total}
           </div>
         )}
