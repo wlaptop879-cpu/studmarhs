@@ -784,33 +784,30 @@ function ClassCard({
       style={{ width: CARD_WIDTH, backgroundColor: theme.pageBg }}
       className="overflow-hidden rounded-[28px] shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]"
     >
-      {/* Top blue gradient header bar with logo + ribbon */}
+      {/* Top gradient header bar: education icon + title + trophy badge */}
       <div
-        className="relative flex items-center px-7 py-5"
+        className="relative flex items-center justify-between px-7 py-5"
         style={{ background: headerGradient }}
       >
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30">
-          <BookOpen className="h-6 w-6 text-white" strokeWidth={2.2} />
-        </div>
-        <div className="ml-4 text-[20px] font-bold tracking-tight text-white">
-          {CENTRE_NAME}
-        </div>
-
-        {/* Ribbon badge top-right */}
-        <div className="absolute right-6 -bottom-3">
-          <div
-            className="flex h-16 w-14 flex-col items-center justify-start pt-2 text-white shadow-lg"
-            style={{
-              background: theme.ribbon,
-              clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)",
-            }}
-          >
-            <Star className="h-6 w-6" fill="white" strokeWidth={1.5} />
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 ring-1 ring-white/30 backdrop-blur-sm">
+            <GraduationCap className="h-7 w-7 text-white" strokeWidth={2.2} />
+          </div>
+          <div className="text-[20px] font-bold tracking-tight text-white truncate">
+            {CENTRE_NAME}
           </div>
         </div>
 
+        {/* Trophy badge top-right */}
+        <div
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 ring-1 ring-white/30 backdrop-blur-sm"
+          style={{ boxShadow: "0 8px 20px -8px rgba(0,0,0,0.3)" }}
+        >
+          <Trophy className="h-6 w-6 text-white" fill="rgba(255,255,255,0.35)" strokeWidth={2} />
+        </div>
+
         {pageInfo && pageInfo.total > 1 && (
-          <div className="absolute right-24 top-3 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-1.5 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
             Page {pageInfo.index + 1} / {pageInfo.total}
           </div>
         )}
@@ -830,51 +827,52 @@ function ClassCard({
               {exam.subject}
             </h2>
 
-            {/* Info chips row */}
+            {/* Info chips row — distinct pastel circles per item */}
             <div className="mt-5 flex flex-wrap items-center gap-x-7 gap-y-3">
               <InfoChip
-                icon={<GraduationCap className="h-5 w-5" style={{ color: theme.accent }} />}
-                bg={theme.accentSoft}
+                icon={<GraduationCap className="h-5 w-5" style={{ color: "#2563eb" }} />}
+                bg="#dbeafe"
                 label="Class"
                 value={className}
               />
               <InfoChip
-                icon={<Calendar className="h-5 w-5" style={{ color: theme.accent }} />}
-                bg={theme.accentSoft}
+                icon={<Calendar className="h-5 w-5" style={{ color: "#ea580c" }} />}
+                bg="#ffedd5"
                 label="Date"
                 value={date}
               />
               <InfoChip
-                icon={<ClipboardList className="h-5 w-5" style={{ color: theme.accent }} />}
-                bg={theme.accentSoft}
-                label="Total"
+                icon={<ClipboardList className="h-5 w-5" style={{ color: "#16a34a" }} />}
+                bg="#dcfce7"
+                label="Total Marks"
                 value={`/ ${exam.totalMarks}`}
               />
             </div>
           </div>
 
-          {/* Stats card */}
-          <div className="flex shrink-0 items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+          {/* Side stats card */}
+          <div
+            className="flex shrink-0 flex-col items-center gap-2 rounded-2xl bg-white px-5 py-4 ring-1 ring-slate-200"
+            style={{ boxShadow: "0 10px 30px -12px rgba(15,23,42,0.18)" }}
+          >
             <div
               className="flex h-12 w-12 items-center justify-center rounded-full"
               style={{ background: theme.accentSoft }}
             >
-              <Trophy className="h-6 w-6" style={{ color: theme.accent }} />
+              <Trophy className="h-6 w-6" style={{ color: theme.accent }} fill={theme.accent} fillOpacity={0.15} />
             </div>
-            <div className="flex flex-col gap-0.5 text-[13px] leading-tight">
+            <div className="flex flex-col gap-1 text-center text-[13px] leading-tight">
               <div>
-                <span className="text-base font-bold" style={{ color: theme.accent }}>
-                  {rows.length}
-                </span>{" "}
-                <span className="text-slate-600">students</span>
+                <span className="text-base font-bold text-slate-900">{rows.length}</span>{" "}
+                <span className="text-slate-500">students</span>
               </div>
               <div>
                 <span className="text-base font-bold text-emerald-600">{present}</span>{" "}
-                <span className="text-slate-600">present</span>
+                <span className="text-slate-500">present</span>
               </div>
               <div>
                 <span className="text-base font-bold text-rose-600">{absent}</span>{" "}
-                <span className="text-slate-600">absent</span>
+                <span className="text-slate-500">absent</span>
               </div>
             </div>
           </div>
