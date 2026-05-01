@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Download, FileText, Sparkles, Check, Loader2, ImageDown } from "lucide-react";
+import { Download, FileText, Sparkles, Check, Loader2, ImageDown, GraduationCap, Calendar, ClipboardList, Trophy, Award, Star, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -42,278 +42,173 @@ type Theme = {
   id: string;
   name: string;
   swatch: string;
-  cardBg: string;
-  headerBg: string;
-  headerText: string;
-  subText: string;
-  bodyBg: string;
-  bodyText: string;
-  rowBg: string;
-  rowAlt: string;
-  rowText: string;
-  rowMuted: string;
-  rankChip: string;
-  topRankChip: string;
-  topRowBg: string;
-  markHi: string;
-  markMid: string;
-  markLow: string;
-  markFail: string;
-  markAb: string;
-  markNo: string;
-  divider: string;
+  // Header gradient (left -> right)
+  gradFrom: string;
+  gradTo: string;
+  // Ribbon (top-right badge) color
+  ribbon: string;
+  // Accent color used for icons / brand text / percentage pill
+  accent: string;
+  accentSoft: string; // light tint of accent for icon circles & pill bg
+  accentText: string; // text color on accentSoft
+  // Page background tint behind the card body (subtle)
+  pageBg: string;
+  // Medal colors for top 3
+  gold: string;
+  silver: string;
+  bronze: string;
 };
 
 const THEMES: Theme[] = [
   {
+    id: "azure",
+    name: "Azure Blue",
+    swatch: "linear-gradient(135deg,#3b82f6,#1d4ed8,#1e3a8a)",
+    gradFrom: "#3b82f6",
+    gradTo: "#1e40af",
+    ribbon: "#1e3a8a",
+    accent: "#2563eb",
+    accentSoft: "#dbeafe",
+    accentText: "#1e3a8a",
+    pageBg: "#f8fafc",
+    gold: "#f5b700",
+    silver: "#9ca3af",
+    bronze: "#c2671a",
+  },
+  {
     id: "sunrise",
     name: "Sunrise",
-    swatch: "linear-gradient(135deg,#fed7aa,#fbbf24,#f472b6)",
-    cardBg: "bg-white",
-    headerBg: "bg-gradient-to-br from-orange-300 via-amber-300 to-pink-300",
-    headerText: "text-stone-900",
-    subText: "text-stone-700/80",
-    bodyBg: "bg-orange-50",
-    bodyText: "text-stone-900",
-    rowBg: "bg-white",
-    rowAlt: "bg-orange-50",
-    rowText: "text-stone-900",
-    rowMuted: "text-stone-500",
-    rankChip: "bg-orange-100 text-orange-900",
-    topRankChip: "bg-stone-900 text-white",
-    topRowBg: "bg-amber-100",
-    markHi: "bg-emerald-200 text-emerald-900",
-    markMid: "bg-amber-200 text-amber-900",
-    markLow: "bg-orange-200 text-orange-900",
-    markFail: "bg-rose-200 text-rose-900",
-    markAb: "bg-rose-100 text-rose-800",
-    markNo: "bg-stone-200 text-stone-700",
-    divider: "border-orange-200",
+    swatch: "linear-gradient(135deg,#fb923c,#f59e0b,#ec4899)",
+    gradFrom: "#fb923c",
+    gradTo: "#ec4899",
+    ribbon: "#9a3412",
+    accent: "#ea580c",
+    accentSoft: "#ffedd5",
+    accentText: "#7c2d12",
+    pageBg: "#fff7ed",
+    gold: "#f5b700",
+    silver: "#9ca3af",
+    bronze: "#c2671a",
   },
   {
     id: "ocean",
     name: "Ocean",
     swatch: "linear-gradient(135deg,#0ea5e9,#06b6d4,#22d3ee)",
-    cardBg: "bg-white",
-    headerBg: "bg-gradient-to-br from-sky-500 via-cyan-500 to-teal-400",
-    headerText: "text-white",
-    subText: "text-white/80",
-    bodyBg: "bg-sky-50",
-    bodyText: "text-slate-900",
-    rowBg: "bg-white",
-    rowAlt: "bg-sky-50",
-    rowText: "text-slate-900",
-    rowMuted: "text-slate-500",
-    rankChip: "bg-sky-100 text-sky-900",
-    topRankChip: "bg-sky-700 text-white",
-    topRowBg: "bg-cyan-100",
-    markHi: "bg-emerald-200 text-emerald-900",
-    markMid: "bg-cyan-200 text-cyan-900",
-    markLow: "bg-sky-200 text-sky-900",
-    markFail: "bg-rose-200 text-rose-900",
-    markAb: "bg-rose-100 text-rose-800",
-    markNo: "bg-slate-200 text-slate-700",
-    divider: "border-sky-200",
+    gradFrom: "#0ea5e9",
+    gradTo: "#0e7490",
+    ribbon: "#155e75",
+    accent: "#0891b2",
+    accentSoft: "#cffafe",
+    accentText: "#155e75",
+    pageBg: "#f0f9ff",
+    gold: "#f5b700",
+    silver: "#9ca3af",
+    bronze: "#c2671a",
   },
   {
     id: "forest",
     name: "Forest",
     swatch: "linear-gradient(135deg,#16a34a,#84cc16,#a3e635)",
-    cardBg: "bg-white",
-    headerBg: "bg-gradient-to-br from-emerald-600 via-green-500 to-lime-400",
-    headerText: "text-white",
-    subText: "text-white/85",
-    bodyBg: "bg-emerald-50",
-    bodyText: "text-emerald-950",
-    rowBg: "bg-white",
-    rowAlt: "bg-emerald-50",
-    rowText: "text-emerald-950",
-    rowMuted: "text-emerald-700/70",
-    rankChip: "bg-emerald-100 text-emerald-900",
-    topRankChip: "bg-emerald-800 text-white",
-    topRowBg: "bg-lime-100",
-    markHi: "bg-emerald-300 text-emerald-950",
-    markMid: "bg-lime-200 text-lime-900",
-    markLow: "bg-yellow-200 text-yellow-900",
-    markFail: "bg-rose-200 text-rose-900",
-    markAb: "bg-rose-100 text-rose-800",
-    markNo: "bg-stone-200 text-stone-700",
-    divider: "border-emerald-200",
+    gradFrom: "#16a34a",
+    gradTo: "#365314",
+    ribbon: "#14532d",
+    accent: "#15803d",
+    accentSoft: "#dcfce7",
+    accentText: "#14532d",
+    pageBg: "#f0fdf4",
+    gold: "#f5b700",
+    silver: "#9ca3af",
+    bronze: "#c2671a",
   },
   {
     id: "midnight",
     name: "Midnight",
-    swatch: "linear-gradient(135deg,#0f172a,#312e81,#7c3aed)",
-    cardBg: "bg-slate-900",
-    headerBg: "bg-gradient-to-br from-slate-900 via-indigo-900 to-violet-800",
-    headerText: "text-white",
-    subText: "text-violet-200/80",
-    bodyBg: "bg-slate-900",
-    bodyText: "text-white",
-    rowBg: "bg-slate-800",
-    rowAlt: "bg-slate-800/60",
-    rowText: "text-white",
-    rowMuted: "text-slate-400",
-    rankChip: "bg-slate-700 text-slate-200",
-    topRankChip: "bg-violet-500 text-white",
-    topRowBg: "bg-violet-900/40",
-    markHi: "bg-emerald-400 text-emerald-950",
-    markMid: "bg-amber-300 text-amber-950",
-    markLow: "bg-orange-300 text-orange-950",
-    markFail: "bg-rose-400 text-rose-950",
-    markAb: "bg-rose-500/30 text-rose-100",
-    markNo: "bg-slate-600 text-slate-100",
-    divider: "border-slate-700",
+    swatch: "linear-gradient(135deg,#1e1b4b,#4c1d95,#7c3aed)",
+    gradFrom: "#1e1b4b",
+    gradTo: "#6d28d9",
+    ribbon: "#312e81",
+    accent: "#7c3aed",
+    accentSoft: "#ede9fe",
+    accentText: "#4c1d95",
+    pageBg: "#faf5ff",
+    gold: "#fbbf24",
+    silver: "#a1a1aa",
+    bronze: "#d97706",
   },
   {
     id: "rose",
     name: "Rose Petal",
     swatch: "linear-gradient(135deg,#f43f5e,#ec4899,#f472b6)",
-    cardBg: "bg-white",
-    headerBg: "bg-gradient-to-br from-rose-500 via-pink-500 to-fuchsia-400",
-    headerText: "text-white",
-    subText: "text-white/85",
-    bodyBg: "bg-rose-50",
-    bodyText: "text-rose-950",
-    rowBg: "bg-white",
-    rowAlt: "bg-rose-50",
-    rowText: "text-rose-950",
-    rowMuted: "text-rose-700/70",
-    rankChip: "bg-rose-100 text-rose-900",
-    topRankChip: "bg-rose-700 text-white",
-    topRowBg: "bg-pink-100",
-    markHi: "bg-emerald-200 text-emerald-900",
-    markMid: "bg-amber-200 text-amber-900",
-    markLow: "bg-pink-200 text-pink-900",
-    markFail: "bg-rose-300 text-rose-950",
-    markAb: "bg-rose-200 text-rose-900",
-    markNo: "bg-stone-200 text-stone-700",
-    divider: "border-rose-200",
+    gradFrom: "#f43f5e",
+    gradTo: "#be185d",
+    ribbon: "#881337",
+    accent: "#e11d48",
+    accentSoft: "#ffe4e6",
+    accentText: "#881337",
+    pageBg: "#fff1f2",
+    gold: "#f5b700",
+    silver: "#9ca3af",
+    bronze: "#c2671a",
   },
   {
     id: "royal",
     name: "Royal",
     swatch: "linear-gradient(135deg,#581c87,#7c3aed,#fbbf24)",
-    cardBg: "bg-white",
-    headerBg: "bg-gradient-to-br from-purple-800 via-violet-700 to-amber-400",
-    headerText: "text-white",
-    subText: "text-amber-100",
-    bodyBg: "bg-violet-50",
-    bodyText: "text-violet-950",
-    rowBg: "bg-white",
-    rowAlt: "bg-violet-50",
-    rowText: "text-violet-950",
-    rowMuted: "text-violet-700/70",
-    rankChip: "bg-violet-100 text-violet-900",
-    topRankChip: "bg-amber-400 text-violet-950",
-    topRowBg: "bg-amber-100",
-    markHi: "bg-amber-300 text-amber-950",
-    markMid: "bg-violet-300 text-violet-950",
-    markLow: "bg-violet-200 text-violet-900",
-    markFail: "bg-rose-200 text-rose-900",
-    markAb: "bg-rose-100 text-rose-800",
-    markNo: "bg-stone-200 text-stone-700",
-    divider: "border-violet-200",
+    gradFrom: "#6b21a8",
+    gradTo: "#b45309",
+    ribbon: "#4c1d95",
+    accent: "#7c3aed",
+    accentSoft: "#f3e8ff",
+    accentText: "#581c87",
+    pageBg: "#faf5ff",
+    gold: "#f59e0b",
+    silver: "#9ca3af",
+    bronze: "#c2671a",
   },
   {
     id: "minimal",
     name: "Minimal Mono",
-    swatch: "linear-gradient(135deg,#f5f5f5,#a3a3a3,#171717)",
-    cardBg: "bg-white",
-    headerBg: "bg-stone-900",
-    headerText: "text-white",
-    subText: "text-stone-300",
-    bodyBg: "bg-white",
-    bodyText: "text-stone-900",
-    rowBg: "bg-stone-50",
-    rowAlt: "bg-white",
-    rowText: "text-stone-900",
-    rowMuted: "text-stone-500",
-    rankChip: "bg-stone-100 text-stone-900",
-    topRankChip: "bg-stone-900 text-white",
-    topRowBg: "bg-stone-100",
-    markHi: "bg-stone-900 text-white",
-    markMid: "bg-stone-700 text-white",
-    markLow: "bg-stone-300 text-stone-900",
-    markFail: "bg-stone-200 text-stone-700",
-    markAb: "bg-stone-200 text-stone-700",
-    markNo: "bg-stone-200 text-stone-700",
-    divider: "border-stone-200",
-  },
-  {
-    id: "candy",
-    name: "Pastel Candy",
-    swatch: "linear-gradient(135deg,#bfdbfe,#fbcfe8,#fde68a)",
-    cardBg: "bg-white",
-    headerBg: "bg-gradient-to-br from-blue-200 via-pink-200 to-yellow-200",
-    headerText: "text-slate-800",
-    subText: "text-slate-600",
-    bodyBg: "bg-blue-50",
-    bodyText: "text-slate-800",
-    rowBg: "bg-white",
-    rowAlt: "bg-pink-50",
-    rowText: "text-slate-800",
-    rowMuted: "text-slate-500",
-    rankChip: "bg-pink-100 text-pink-800",
-    topRankChip: "bg-pink-500 text-white",
-    topRowBg: "bg-yellow-100",
-    markHi: "bg-emerald-200 text-emerald-900",
-    markMid: "bg-yellow-200 text-yellow-900",
-    markLow: "bg-pink-200 text-pink-900",
-    markFail: "bg-rose-200 text-rose-900",
-    markAb: "bg-rose-100 text-rose-800",
-    markNo: "bg-slate-200 text-slate-700",
-    divider: "border-pink-200",
+    swatch: "linear-gradient(135deg,#525252,#171717,#000000)",
+    gradFrom: "#404040",
+    gradTo: "#0a0a0a",
+    ribbon: "#171717",
+    accent: "#171717",
+    accentSoft: "#f5f5f5",
+    accentText: "#171717",
+    pageBg: "#fafafa",
+    gold: "#a3a3a3",
+    silver: "#d4d4d4",
+    bronze: "#737373",
   },
   {
     id: "sunset",
     name: "Sunset Gold",
     swatch: "linear-gradient(135deg,#dc2626,#ea580c,#facc15)",
-    cardBg: "bg-white",
-    headerBg: "bg-gradient-to-br from-red-600 via-orange-500 to-yellow-400",
-    headerText: "text-white",
-    subText: "text-yellow-100",
-    bodyBg: "bg-orange-50",
-    bodyText: "text-stone-900",
-    rowBg: "bg-white",
-    rowAlt: "bg-amber-50",
-    rowText: "text-stone-900",
-    rowMuted: "text-stone-500",
-    rankChip: "bg-amber-100 text-amber-900",
-    topRankChip: "bg-red-600 text-white",
-    topRowBg: "bg-yellow-100",
-    markHi: "bg-emerald-200 text-emerald-900",
-    markMid: "bg-amber-300 text-amber-950",
-    markLow: "bg-orange-200 text-orange-900",
-    markFail: "bg-red-200 text-red-900",
-    markAb: "bg-rose-100 text-rose-800",
-    markNo: "bg-stone-200 text-stone-700",
-    divider: "border-amber-200",
+    gradFrom: "#dc2626",
+    gradTo: "#ea580c",
+    ribbon: "#7f1d1d",
+    accent: "#dc2626",
+    accentSoft: "#fee2e2",
+    accentText: "#7f1d1d",
+    pageBg: "#fff7ed",
+    gold: "#f59e0b",
+    silver: "#9ca3af",
+    bronze: "#c2671a",
   },
   {
     id: "graphite",
     name: "Graphite Teal",
     swatch: "linear-gradient(135deg,#1f2937,#0d9488,#5eead4)",
-    cardBg: "bg-slate-50",
-    headerBg: "bg-gradient-to-br from-slate-800 via-teal-700 to-teal-400",
-    headerText: "text-white",
-    subText: "text-teal-100",
-    bodyBg: "bg-slate-50",
-    bodyText: "text-slate-900",
-    rowBg: "bg-white",
-    rowAlt: "bg-teal-50",
-    rowText: "text-slate-900",
-    rowMuted: "text-slate-500",
-    rankChip: "bg-teal-100 text-teal-900",
-    topRankChip: "bg-slate-900 text-teal-200",
-    topRowBg: "bg-teal-100",
-    markHi: "bg-teal-300 text-teal-950",
-    markMid: "bg-teal-200 text-teal-900",
-    markLow: "bg-amber-200 text-amber-900",
-    markFail: "bg-rose-200 text-rose-900",
-    markAb: "bg-rose-100 text-rose-800",
-    markNo: "bg-slate-200 text-slate-700",
-    divider: "border-slate-200",
+    gradFrom: "#1f2937",
+    gradTo: "#0f766e",
+    ribbon: "#134e4a",
+    accent: "#0d9488",
+    accentSoft: "#ccfbf1",
+    accentText: "#134e4a",
+    pageBg: "#f8fafc",
+    gold: "#f5b700",
+    silver: "#9ca3af",
+    bronze: "#c2671a",
   },
 ];
 
@@ -337,7 +232,7 @@ function ExportPage() {
   const { students, hydrated: sh } = useStudents(classId);
   const { exams, hydrated: eh } = useExams(classId);
   const [activeId, setActiveId] = useState<string>(examId);
-  const [themeId, setThemeId] = useState<string>("sunrise");
+  const [themeId, setThemeId] = useState<string>("azure");
   const [sort, setSort] = useState<SortId>("high");
   const cardRef = useRef<HTMLDivElement>(null);
   const pdfHostRef = useRef<HTMLDivElement>(null);
@@ -881,139 +776,268 @@ function ClassCard({
   const present = rows.filter((r) => typeof r.mark === "number").length;
   const absent = rows.filter((r) => r.mark === "ab").length;
   const startRank = pageInfo?.startRank ?? 0;
+  const headerGradient = `linear-gradient(90deg, ${theme.gradFrom}, ${theme.gradTo})`;
 
   return (
     <div
       ref={ref}
-      className={cn("overflow-hidden rounded-3xl shadow-card", theme.cardBg)}
-      style={{ width: CARD_WIDTH }}
+      style={{ width: CARD_WIDTH, backgroundColor: theme.pageBg }}
+      className="overflow-hidden rounded-[28px] shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]"
     >
-      {/* Header */}
-      <div className={cn("relative px-8", theme.headerBg, compact ? "py-5" : "py-7")}>
-        <div className={cn("text-[10px] font-bold uppercase tracking-[0.28em]", theme.subText)}>
+      {/* Top blue gradient header bar with logo + ribbon */}
+      <div
+        className="relative flex items-center px-7 py-5"
+        style={{ background: headerGradient }}
+      >
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/20 ring-1 ring-white/30">
+          <BookOpen className="h-6 w-6 text-white" strokeWidth={2.2} />
+        </div>
+        <div className="ml-4 text-[20px] font-bold tracking-tight text-white">
           {CENTRE_NAME}
         </div>
-        <div className="mt-2 flex items-end justify-between gap-4">
-          <div>
-            <h2 className={cn("font-bold leading-tight tracking-tight", theme.headerText, compact ? "text-xl" : "text-2xl")}>
-              {exam.subject}
-            </h2>
-            <div className={cn("mt-1 text-xs font-medium", theme.subText)}>
-              Class · <span className={theme.headerText}>{className}</span>
-            </div>
-          </div>
-          <div className={cn("text-right text-[11px]", theme.subText)}>
-            <div>Date</div>
-            <div className={cn("text-sm font-bold", theme.headerText)}>{date}</div>
-            <div className="mt-1">Total</div>
-            <div className={cn("text-sm font-bold", theme.headerText)}>/ {exam.totalMarks}</div>
+
+        {/* Ribbon badge top-right */}
+        <div className="absolute right-6 -bottom-3">
+          <div
+            className="flex h-16 w-14 flex-col items-center justify-start pt-2 text-white shadow-lg"
+            style={{
+              background: theme.ribbon,
+              clipPath: "polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%)",
+            }}
+          >
+            <Star className="h-6 w-6" fill="white" strokeWidth={1.5} />
           </div>
         </div>
+
         {pageInfo && pageInfo.total > 1 && (
-          <div className="absolute right-3 top-3 rounded-full bg-black/25 px-2 py-0.5 text-[10px] font-bold text-white">
+          <div className="absolute right-24 top-3 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
             Page {pageInfo.index + 1} / {pageInfo.total}
           </div>
         )}
       </div>
 
-      {/* Body */}
-      <div className={cn(compact ? "px-5 py-4" : "px-6 py-6", theme.bodyBg)}>
-        <ul className={cn("flex flex-col", compact ? "gap-1" : "gap-2")}>
-          {rows.map((r, i) => {
-            const absoluteRank = startRank + i;
-            const top = absoluteRank < 3 && typeof r.mark === "number";
-            return (
-              <li
-                key={r.student.id}
-                className={cn(
-                  "flex items-center rounded-2xl",
-                  compact ? "gap-2 px-3 py-1.5" : "gap-3 px-4 py-3",
-                  top ? theme.topRowBg : i % 2 === 0 ? theme.rowBg : theme.rowAlt,
-                )}
-              >
+      {/* Body white area */}
+      <div className="bg-white px-8 pb-6 pt-7">
+        {/* Title row: subject huge on left, stats card on right */}
+        <div className="flex items-start justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <h2
+              className={cn(
+                "font-bold tracking-tight text-slate-900",
+                compact ? "text-3xl" : "text-5xl",
+              )}
+            >
+              {exam.subject}
+            </h2>
+
+            {/* Info chips row */}
+            <div className="mt-5 flex flex-wrap items-center gap-x-7 gap-y-3">
+              <InfoChip
+                icon={<GraduationCap className="h-5 w-5" style={{ color: theme.accent }} />}
+                bg={theme.accentSoft}
+                label="Class"
+                value={className}
+              />
+              <InfoChip
+                icon={<Calendar className="h-5 w-5" style={{ color: theme.accent }} />}
+                bg={theme.accentSoft}
+                label="Date"
+                value={date}
+              />
+              <InfoChip
+                icon={<ClipboardList className="h-5 w-5" style={{ color: theme.accent }} />}
+                bg={theme.accentSoft}
+                label="Total"
+                value={`/ ${exam.totalMarks}`}
+              />
+            </div>
+          </div>
+
+          {/* Stats card */}
+          <div className="flex shrink-0 items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-full"
+              style={{ background: theme.accentSoft }}
+            >
+              <Trophy className="h-6 w-6" style={{ color: theme.accent }} />
+            </div>
+            <div className="flex flex-col gap-0.5 text-[13px] leading-tight">
+              <div>
+                <span className="text-base font-bold" style={{ color: theme.accent }}>
+                  {rows.length}
+                </span>{" "}
+                <span className="text-slate-600">students</span>
+              </div>
+              <div>
+                <span className="text-base font-bold text-emerald-600">{present}</span>{" "}
+                <span className="text-slate-600">present</span>
+              </div>
+              <div>
+                <span className="text-base font-bold text-rose-600">{absent}</span>{" "}
+                <span className="text-slate-600">absent</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="mt-7 overflow-hidden rounded-2xl bg-slate-50/70 ring-1 ring-slate-200/70">
+          {/* Table header */}
+          <div className="grid grid-cols-[80px_1fr_120px_140px] items-center px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+            <div>Rank</div>
+            <div>Student Name</div>
+            <div className="text-right">Score</div>
+            <div className="text-right">Percentage</div>
+          </div>
+
+          <div className="bg-white">
+            {rows.map((r, i) => {
+              const absoluteRank = startRank + i;
+              const medal =
+                absoluteRank === 0
+                  ? theme.gold
+                  : absoluteRank === 1
+                    ? theme.silver
+                    : absoluteRank === 2
+                      ? theme.bronze
+                      : null;
+              return (
                 <div
+                  key={r.student.id}
                   className={cn(
-                    "flex shrink-0 items-center justify-center rounded-full font-bold tabular-nums",
-                    compact ? "h-7 w-7 text-[11px]" : "h-9 w-9 text-xs",
-                    top ? theme.topRankChip : theme.rankChip,
+                    "grid grid-cols-[80px_1fr_120px_140px] items-center border-t border-slate-100 px-5",
+                    compact ? "py-2.5" : "py-3.5",
                   )}
                 >
-                  {absoluteRank + 1}
-                </div>
-                <div className="min-w-0 flex-1">
+                  {/* Rank medal */}
+                  <div className="flex items-center">
+                    {medal ? (
+                      <div className="relative">
+                        <div
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white shadow"
+                          style={{ background: medal }}
+                        >
+                          {absoluteRank + 1}
+                        </div>
+                        <Award
+                          className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-4 w-4"
+                          style={{ color: medal }}
+                          fill={medal}
+                          strokeWidth={1.5}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+                        {absoluteRank + 1}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Name */}
                   <div
                     className={cn(
-                      "font-tamil truncate font-semibold leading-tight",
-                      compact ? "text-sm" : "text-base",
-                      theme.rowText,
+                      "font-tamil truncate font-bold text-slate-900",
+                      compact ? "text-base" : "text-lg",
                     )}
                   >
                     {r.student.name}
                   </div>
+
+                  {/* Score */}
+                  <div className="text-right text-sm font-semibold text-slate-700 tabular-nums">
+                    <ScoreText mark={r.mark} total={exam.totalMarks} />
+                  </div>
+
+                  {/* Percentage pill */}
+                  <div className="flex justify-end">
+                    <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} />
+                  </div>
                 </div>
-                <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} compact={compact} />
-              </li>
-            );
-          })}
-        </ul>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Footer */}
-        <div className={cn("mt-6 flex items-center justify-between border-t pt-4 text-[10px] uppercase tracking-[0.22em]", theme.divider, theme.rowMuted)}>
-          <span>
-            {rows.length} students · {present} present · {absent} absent
+        <div className="mt-5 flex items-center gap-2 text-sm">
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-full"
+            style={{ background: theme.accentSoft }}
+          >
+            <Star className="h-3.5 w-3.5" style={{ color: theme.accent }} fill="currentColor" />
+          </div>
+          <span className="font-bold" style={{ color: theme.accent }}>
+            Wisdom Maths
           </span>
-          <span>Wisdom Maths · Result Sheet</span>
+          <span className="text-slate-400">·</span>
+          <span className="text-slate-500">Result Sheet</span>
         </div>
       </div>
     </div>
   );
 }
 
+function InfoChip({
+  icon,
+  bg,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  bg: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-full"
+        style={{ background: bg }}
+      >
+        {icon}
+      </div>
+      <div className="leading-tight">
+        <div className="text-xs font-medium text-slate-500">{label}</div>
+        <div className="text-base font-bold text-slate-900">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function ScoreText({ mark, total }: { mark: MarkStatus | undefined; total: number }) {
+  if (mark === "ab") return <span className="font-tamil text-rose-600">வரவில்லை</span>;
+  if (mark === "no") return <span className="font-tamil text-slate-500">—</span>;
+  if (typeof mark === "number")
+    return (
+      <>
+        {mark} <span className="text-slate-400">/ {total}</span>
+      </>
+    );
+  return <span className="text-slate-400">—</span>;
+}
+
 function MarkPill({
   mark,
   total,
   theme,
-  compact,
 }: {
   mark: MarkStatus | undefined;
   total: number;
   theme: Theme;
-  compact?: boolean;
 }) {
-  const pad = compact ? "px-2 py-0.5 text-[11px]" : "px-3 py-1 text-xs";
-  if (mark === "ab") {
-    return (
-      <span className={cn("font-tamil inline-flex items-center rounded-full font-semibold", pad, theme.markAb)}>
-        வரவில்லை
-      </span>
-    );
-  }
-  if (mark === "no") {
-    return (
-      <span className={cn("font-tamil inline-flex items-center rounded-full font-semibold whitespace-nowrap", pad, theme.markNo)}>
-        தேர்வு எழுதவில்லை
-      </span>
-    );
-  }
   if (typeof mark === "number") {
     const pct = (mark / total) * 100;
-    const tone =
-      pct >= 90 ? theme.markHi : pct >= 75 ? theme.markMid : pct >= 50 ? theme.markLow : theme.markFail;
     return (
       <span
-        className={cn(
-          "inline-flex items-baseline gap-1 rounded-full font-bold tabular-nums",
-          compact ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm",
-          tone,
-        )}
+        className="inline-flex items-center rounded-full px-3 py-1 text-sm font-bold tabular-nums"
+        style={{ background: theme.accentSoft, color: theme.accentText }}
       >
-        {mark}
-        <span className="text-[10px] font-medium opacity-70">/ {total}</span>
+        {pct.toFixed(2)}%
       </span>
     );
   }
   return (
-    <span className={cn("inline-flex items-center rounded-full bg-stone-100 text-stone-500", pad)}>
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-400">
       —
     </span>
   );
