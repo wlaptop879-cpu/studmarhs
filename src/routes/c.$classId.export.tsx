@@ -827,51 +827,52 @@ function ClassCard({
               {exam.subject}
             </h2>
 
-            {/* Info chips row */}
+            {/* Info chips row — distinct pastel circles per item */}
             <div className="mt-5 flex flex-wrap items-center gap-x-7 gap-y-3">
               <InfoChip
-                icon={<GraduationCap className="h-5 w-5" style={{ color: theme.accent }} />}
-                bg={theme.accentSoft}
+                icon={<GraduationCap className="h-5 w-5" style={{ color: "#2563eb" }} />}
+                bg="#dbeafe"
                 label="Class"
                 value={className}
               />
               <InfoChip
-                icon={<Calendar className="h-5 w-5" style={{ color: theme.accent }} />}
-                bg={theme.accentSoft}
+                icon={<Calendar className="h-5 w-5" style={{ color: "#ea580c" }} />}
+                bg="#ffedd5"
                 label="Date"
                 value={date}
               />
               <InfoChip
-                icon={<ClipboardList className="h-5 w-5" style={{ color: theme.accent }} />}
-                bg={theme.accentSoft}
-                label="Total"
+                icon={<ClipboardList className="h-5 w-5" style={{ color: "#16a34a" }} />}
+                bg="#dcfce7"
+                label="Total Marks"
                 value={`/ ${exam.totalMarks}`}
               />
             </div>
           </div>
 
-          {/* Stats card */}
-          <div className="flex shrink-0 items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 ring-1 ring-slate-200">
+          {/* Side stats card */}
+          <div
+            className="flex shrink-0 flex-col items-center gap-2 rounded-2xl bg-white px-5 py-4 ring-1 ring-slate-200"
+            style={{ boxShadow: "0 10px 30px -12px rgba(15,23,42,0.18)" }}
+          >
             <div
               className="flex h-12 w-12 items-center justify-center rounded-full"
               style={{ background: theme.accentSoft }}
             >
-              <Trophy className="h-6 w-6" style={{ color: theme.accent }} />
+              <Trophy className="h-6 w-6" style={{ color: theme.accent }} fill={theme.accent} fillOpacity={0.15} />
             </div>
-            <div className="flex flex-col gap-0.5 text-[13px] leading-tight">
+            <div className="flex flex-col gap-1 text-center text-[13px] leading-tight">
               <div>
-                <span className="text-base font-bold" style={{ color: theme.accent }}>
-                  {rows.length}
-                </span>{" "}
-                <span className="text-slate-600">students</span>
+                <span className="text-base font-bold text-slate-900">{rows.length}</span>{" "}
+                <span className="text-slate-500">students</span>
               </div>
               <div>
                 <span className="text-base font-bold text-emerald-600">{present}</span>{" "}
-                <span className="text-slate-600">present</span>
+                <span className="text-slate-500">present</span>
               </div>
               <div>
                 <span className="text-base font-bold text-rose-600">{absent}</span>{" "}
-                <span className="text-slate-600">absent</span>
+                <span className="text-slate-500">absent</span>
               </div>
             </div>
           </div>
