@@ -773,10 +773,39 @@ function ClassCard({
   ref?: React.Ref<HTMLDivElement>;
 }) {
   const date = formatDate(exam.date);
-  const present = rows.filter((r) => typeof r.mark === "number").length;
+  const numericMarks = rows
+    .map((r) => r.mark)
+    .filter((m): m is number => typeof m === "number");
+  const present = numericMarks.length;
   const absent = rows.filter((r) => r.mark === "ab").length;
+  const notWritten = rows.filter((r) => r.mark === "no").length;
+  const total = rows.length;
+  const topMark = numericMarks.length ? Math.max(...numericMarks) : 0;
+  const avgMark = numericMarks.length
+    ? numericMarks.reduce((a, b) => a + b, 0) / numericMarks.length
+    : 0;
+  const avgPct = exam.totalMarks ? (avgMark / exam.totalMarks) * 100 : 0;
+  const passCount = numericMarks.filter((m) => m / exam.totalMarks >= 0.4).length;
+  const passRate = present ? (passCount / present) * 100 : 0;
   const startRank = pageInfo?.startRank ?? 0;
-  const headerGradient = `linear-gradient(90deg, ${theme.gradFrom}, ${theme.gradTo})`;
+  const headerGradient = `linear-gradient(135deg, ${theme.gradFrom}, ${theme.gradTo})`;
+
+  // Distribution buckets (based on numeric marks)
+  const buckets = [
+    { label: "90-100", min: 90, color: "#10b981" },
+    { label: "75-89", min: 75, color: "#22c55e" },
+    { label: "60-74", min: 60, color: "#eab308" },
+    { label: "40-59", min: 40, color: "#f97316" },
+    { label: "0-39", min: 0, color: "#ef4444" },
+  ].map((b, idx, arr) => {
+    const next = arr[idx - 1]?.min ?? 101;
+    const count = numericMarks.filter((m) => {
+      const p = (m / exam.totalMarks) * 100;
+      return p >= b.min && p < next;
+    }).length;
+    return { ...b, count };
+  });
+  const maxBucket = Math.max(1, ...buckets.map((b) => b.count));
 
   return (
     <div
@@ -784,108 +813,171 @@ function ClassCard({
       style={{ width: CARD_WIDTH, backgroundColor: theme.pageBg }}
       className="overflow-hidden rounded-[28px] shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]"
     >
-      {/* Top gradient header bar: education icon + title + trophy badge */}
+      {/* Hero header */}
       <div
-        className="relative flex items-center justify-between px-7 py-5"
+        className="relative overflow-hidden px-7 pt-6 pb-8"
         style={{ background: headerGradient }}
       >
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 ring-1 ring-white/30 backdrop-blur-sm">
-            <GraduationCap className="h-7 w-7 text-white" strokeWidth={2.2} />
+        <div
+          className="absolute -right-20 -top-20 h-56 w-56 rounded-full"
+          style={{ background: "rgba(255,255,255,0.12)" }}
+        />
+        <div
+          className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full"
+          style={{ background: "rgba(0,0,0,0.10)" }}
+        />
+
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-2xl"
+              style={{ background: "rgba(255,255,255,0.22)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3)" }}
+            >
+              <GraduationCap className="h-7 w-7 text-white" strokeWidth={2.2} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/80">
+                Performance Report
+              </div>
+              <div className="mt-0.5 text-[18px] font-bold tracking-tight text-white truncate">
+                {CENTRE_NAME}
+              </div>
+            </div>
           </div>
-          <div className="text-[20px] font-bold tracking-tight text-white truncate">
-            {CENTRE_NAME}
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+            style={{ background: "rgba(255,255,255,0.22)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3)" }}
+          >
+            <Trophy className="h-6 w-6 text-white" fill="rgba(255,255,255,0.35)" strokeWidth={2} />
           </div>
         </div>
 
-        {/* Trophy badge top-right */}
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 ring-1 ring-white/30 backdrop-blur-sm"
-          style={{ boxShadow: "0 8px 20px -8px rgba(0,0,0,0.3)" }}
-        >
-          <Trophy className="h-6 w-6 text-white" fill="rgba(255,255,255,0.35)" strokeWidth={2} />
+        {/* Subject + meta */}
+        <div className="relative mt-6 flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h2
+              className={cn(
+                "font-bold tracking-tight text-white",
+                compact ? "text-3xl" : "text-[42px] leading-[1.05]",
+              )}
+            >
+              {exam.subject}
+            </h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/25">
+                <BookOpen className="h-3.5 w-3.5" /> {className}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/25">
+                <Calendar className="h-3.5 w-3.5" /> {date}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/25">
+                <ClipboardList className="h-3.5 w-3.5" /> /{exam.totalMarks}
+              </span>
+            </div>
+          </div>
+
+          {/* Avg ring */}
+          <div
+            className="flex shrink-0 flex-col items-center justify-center rounded-2xl px-4 py-3"
+            style={{ background: "rgba(255,255,255,0.18)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.28)" }}
+          >
+            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/85">
+              Class Avg
+            </div>
+            <div className="text-2xl font-bold tabular-nums text-white">
+              {avgPct.toFixed(1)}%
+            </div>
+          </div>
         </div>
 
         {pageInfo && pageInfo.total > 1 && (
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-1.5 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
+          <div className="absolute right-4 top-3 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
             Page {pageInfo.index + 1} / {pageInfo.total}
           </div>
         )}
       </div>
 
-      {/* Body white area */}
-      <div className="bg-white px-8 pb-6 pt-7">
-        {/* Title row: subject huge on left, stats card on right */}
-        <div className="flex items-start justify-between gap-6">
-          <div className="min-w-0 flex-1">
-            <h2
-              className={cn(
-                "font-bold tracking-tight text-slate-900",
-                compact ? "text-3xl" : "text-5xl",
-              )}
-            >
-              {exam.subject}
-            </h2>
+      {/* Body */}
+      <div className="bg-white px-7 pt-6 pb-7">
+        {/* KPI grid */}
+        <div className="grid grid-cols-4 gap-3">
+          <KpiTile label="Students" value={total} accent={theme.accent} accentSoft={theme.accentSoft} icon={<BookOpen className="h-4 w-4" />} />
+          <KpiTile label="Present" value={present} accent="#059669" accentSoft="#d1fae5" icon={<Check className="h-4 w-4" />} />
+          <KpiTile label="Absent" value={absent + notWritten} accent="#dc2626" accentSoft="#fee2e2" icon={<Star className="h-4 w-4" />} />
+          <KpiTile label="Top Score" value={`${topMark}/${exam.totalMarks}`} accent={theme.accent} accentSoft={theme.accentSoft} icon={<Trophy className="h-4 w-4" />} />
+        </div>
 
-            {/* Info chips row — distinct pastel circles per item */}
-            <div className="mt-5 flex flex-wrap items-center gap-x-7 gap-y-3">
-              <InfoChip
-                icon={<GraduationCap className="h-5 w-5" style={{ color: "#2563eb" }} />}
-                bg="#dbeafe"
-                label="Class"
-                value={className}
-              />
-              <InfoChip
-                icon={<Calendar className="h-5 w-5" style={{ color: "#ea580c" }} />}
-                bg="#ffedd5"
-                label="Date"
-                value={date}
-              />
-              <InfoChip
-                icon={<ClipboardList className="h-5 w-5" style={{ color: "#16a34a" }} />}
-                bg="#dcfce7"
-                label="Total Marks"
-                value={`/ ${exam.totalMarks}`}
-              />
+        {/* Analytics row: distribution + pass rate */}
+        <div className="mt-5 grid grid-cols-5 gap-3">
+          {/* Distribution chart */}
+          <div className="col-span-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200/70">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                Score Distribution
+              </div>
+              <div className="text-[10px] font-semibold text-slate-400">% bands</div>
+            </div>
+            <div className="mt-3 flex h-24 items-end gap-2">
+              {buckets.map((b) => {
+                const h = (b.count / maxBucket) * 100;
+                return (
+                  <div key={b.label} className="flex flex-1 flex-col items-center gap-1">
+                    <div className="text-[10px] font-bold tabular-nums text-slate-700">
+                      {b.count}
+                    </div>
+                    <div
+                      className="w-full rounded-t-md"
+                      style={{
+                        height: `${Math.max(h, 4)}%`,
+                        background: b.color,
+                        minHeight: 4,
+                      }}
+                    />
+                    <div className="text-[9px] font-semibold text-slate-500">{b.label}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Side stats card */}
-          <div
-            className="flex shrink-0 flex-col items-center gap-2 rounded-2xl bg-white px-5 py-4 ring-1 ring-slate-200"
-            style={{ boxShadow: "0 10px 30px -12px rgba(15,23,42,0.18)" }}
-          >
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-full"
-              style={{ background: theme.accentSoft }}
-            >
-              <Trophy className="h-6 w-6" style={{ color: theme.accent }} fill={theme.accent} fillOpacity={0.15} />
+          {/* Pass rate ring */}
+          <div className="col-span-2 flex flex-col rounded-2xl p-4 ring-1 ring-slate-200/70" style={{ background: theme.accentSoft }}>
+            <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: theme.accentText }}>
+              Pass Rate
             </div>
-            <div className="flex flex-col gap-1 text-center text-[13px] leading-tight">
-              <div>
-                <span className="text-base font-bold text-slate-900">{rows.length}</span>{" "}
-                <span className="text-slate-500">students</span>
+            <div className="mt-2 flex items-center gap-3">
+              <div
+                className="flex h-16 w-16 items-center justify-center rounded-full"
+                style={{
+                  background: `conic-gradient(${theme.accent} ${passRate * 3.6}deg, rgba(255,255,255,0.7) 0deg)`,
+                }}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
+                  <span className="text-[13px] font-bold tabular-nums" style={{ color: theme.accent }}>
+                    {passRate.toFixed(0)}%
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className="text-base font-bold text-emerald-600">{present}</span>{" "}
-                <span className="text-slate-500">present</span>
-              </div>
-              <div>
-                <span className="text-base font-bold text-rose-600">{absent}</span>{" "}
-                <span className="text-slate-500">absent</span>
+              <div className="text-[12px] leading-tight">
+                <div className="font-bold" style={{ color: theme.accentText }}>
+                  {passCount} / {present}
+                </div>
+                <div className="text-slate-600">scored ≥ 40%</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="mt-7 overflow-hidden rounded-2xl bg-slate-50/70 ring-1 ring-slate-200/70">
-          {/* Table header */}
-          <div className="grid grid-cols-[80px_1fr_120px_140px] items-center px-5 py-3 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
+        {/* Ranked table */}
+        <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-slate-200/70">
+          <div
+            className="grid grid-cols-[70px_1fr_120px_130px] items-center px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white"
+            style={{ background: headerGradient }}
+          >
             <div>Rank</div>
-            <div>Student Name</div>
+            <div>Student</div>
             <div className="text-right">Score</div>
-            <div className="text-right">Percentage</div>
+            <div className="text-right">Percent</div>
           </div>
 
           <div className="bg-white">
@@ -899,30 +991,23 @@ function ClassCard({
                     : absoluteRank === 2
                       ? theme.bronze
                       : null;
+              const zebra = i % 2 === 1 ? "#fafafa" : "#ffffff";
               return (
                 <div
                   key={r.student.id}
                   className={cn(
-                    "grid grid-cols-[80px_1fr_120px_140px] items-center border-t border-slate-100 px-5",
-                    compact ? "py-2.5" : "py-3.5",
+                    "grid grid-cols-[70px_1fr_120px_130px] items-center border-t border-slate-100 px-5",
+                    compact ? "py-2" : "py-3",
                   )}
+                  style={{ background: zebra }}
                 >
-                  {/* Rank medal */}
                   <div className="flex items-center">
                     {medal ? (
-                      <div className="relative">
-                        <div
-                          className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white shadow"
-                          style={{ background: medal }}
-                        >
-                          {absoluteRank + 1}
-                        </div>
-                        <Award
-                          className="absolute -bottom-2 left-1/2 -translate-x-1/2 h-4 w-4"
-                          style={{ color: medal }}
-                          fill={medal}
-                          strokeWidth={1.5}
-                        />
+                      <div
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
+                        style={{ background: medal, boxShadow: `0 4px 12px -4px ${medal}` }}
+                      >
+                        {absoluteRank + 1}
                       </div>
                     ) : (
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
@@ -931,22 +1016,19 @@ function ClassCard({
                     )}
                   </div>
 
-                  {/* Name */}
                   <div
                     className={cn(
-                      "font-tamil truncate font-bold text-slate-900",
-                      compact ? "text-base" : "text-lg",
+                      "font-tamil truncate font-semibold text-slate-900",
+                      compact ? "text-sm" : "text-base",
                     )}
                   >
                     {r.student.name}
                   </div>
 
-                  {/* Score */}
                   <div className="text-right text-sm font-semibold text-slate-700 tabular-nums">
                     <ScoreText mark={r.mark} total={exam.totalMarks} />
                   </div>
 
-                  {/* Percentage pill */}
                   <div className="flex justify-end">
                     <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} />
                   </div>
@@ -957,20 +1039,59 @@ function ClassCard({
         </div>
 
         {/* Footer */}
-        <div className="mt-5 flex items-center gap-2 text-sm">
-          <div
-            className="flex h-7 w-7 items-center justify-center rounded-full"
-            style={{ background: theme.accentSoft }}
-          >
-            <Star className="h-3.5 w-3.5" style={{ color: theme.accent }} fill="currentColor" />
+        <div className="mt-5 flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <div
+              className="flex h-7 w-7 items-center justify-center rounded-full"
+              style={{ background: theme.accentSoft }}
+            >
+              <Star className="h-3.5 w-3.5" style={{ color: theme.accent }} fill="currentColor" />
+            </div>
+            <span className="font-bold" style={{ color: theme.accent }}>
+              Wisdom Maths
+            </span>
+            <span className="text-slate-400">·</span>
+            <span className="text-slate-500">Analytics Report</span>
           </div>
-          <span className="font-bold" style={{ color: theme.accent }}>
-            Wisdom Maths
-          </span>
-          <span className="text-slate-400">·</span>
-          <span className="text-slate-500">Result Sheet</span>
+          <div className="text-[11px] font-semibold text-slate-400">
+            Generated {new Date().toLocaleDateString("en-GB")}
+          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function KpiTile({
+  label,
+  value,
+  accent,
+  accentSoft,
+  icon,
+}: {
+  label: string;
+  value: string | number;
+  accent: string;
+  accentSoft: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div
+      className="relative overflow-hidden rounded-2xl bg-white p-3 ring-1 ring-slate-200"
+      style={{ boxShadow: "0 6px 18px -10px rgba(15,23,42,0.2)" }}
+    >
+      <div className="flex items-center gap-2">
+        <div
+          className="flex h-7 w-7 items-center justify-center rounded-lg"
+          style={{ background: accentSoft, color: accent }}
+        >
+          {icon}
+        </div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+          {label}
+        </div>
+      </div>
+      <div className="mt-2 text-xl font-bold tabular-nums text-slate-900">{value}</div>
     </div>
   );
 }
