@@ -42,26 +42,21 @@ type Theme = {
   id: string;
   name: string;
   swatch: string;
-  cardBg: string;
-  headerBg: string;
-  headerText: string;
-  subText: string;
-  bodyBg: string;
-  bodyText: string;
-  rowBg: string;
-  rowAlt: string;
-  rowText: string;
-  rowMuted: string;
-  rankChip: string;
-  topRankChip: string;
-  topRowBg: string;
-  markHi: string;
-  markMid: string;
-  markLow: string;
-  markFail: string;
-  markAb: string;
-  markNo: string;
-  divider: string;
+  // Header gradient (left -> right)
+  gradFrom: string;
+  gradTo: string;
+  // Ribbon (top-right badge) color
+  ribbon: string;
+  // Accent color used for icons / brand text / percentage pill
+  accent: string;
+  accentSoft: string; // light tint of accent for icon circles & pill bg
+  accentText: string; // text color on accentSoft
+  // Page background tint behind the card body (subtle)
+  pageBg: string;
+  // Medal colors for top 3
+  gold: string;
+  silver: string;
+  bronze: string;
 };
 
 const THEMES: Theme[] = [
