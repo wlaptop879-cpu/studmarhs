@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Download, FileText, Sparkles, Check, Loader2, ImageDown } from "lucide-react";
+import { Download, FileText, Sparkles, Check, Loader2, ImageDown, GraduationCap, Calendar, ClipboardList, Trophy, Award, Star, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
