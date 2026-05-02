@@ -393,6 +393,7 @@ function ExportPage() {
             <ClassCard
               exam={exam!}
               rows={chunks[pageIdx]}
+              analysisRows={rows}
               theme={theme}
               className={cls!.name}
               compact
@@ -772,6 +773,7 @@ type Row = { student: Student; mark: MarkStatus | undefined };
 function ClassCard({
   exam,
   rows,
+  analysisRows,
   theme,
   className,
   pageInfo,
@@ -780,6 +782,7 @@ function ClassCard({
 }: {
   exam: Exam;
   rows: Row[];
+  analysisRows?: Row[];
   theme: Theme;
   className: string;
   pageInfo?: { index: number; total: number; startRank: number };
@@ -787,14 +790,16 @@ function ClassCard({
   ref?: React.Ref<HTMLDivElement>;
 }) {
   const date = formatDate(exam.date);
-  const numericMarks = rows
+  const reportRows = analysisRows ?? rows;
+  const numericMarks = reportRows
     .map((r) => r.mark)
     .filter((m): m is number => typeof m === "number");
   const present = numericMarks.length;
-  const absent = rows.filter((r) => r.mark === "ab").length;
-  const notWritten = rows.filter((r) => r.mark === "no").length;
-  const total = rows.length;
+  const absent = reportRows.filter((r) => r.mark === "ab").length;
+  const notWritten = reportRows.filter((r) => r.mark === "no").length;
+  const total = reportRows.length;
   const topMark = numericMarks.length ? Math.max(...numericMarks) : 0;
+  const fullMarkCount = numericMarks.filter((m) => m === exam.totalMarks).length;
   const avgMark = numericMarks.length
     ? numericMarks.reduce((a, b) => a + b, 0) / numericMarks.length
     : 0;
