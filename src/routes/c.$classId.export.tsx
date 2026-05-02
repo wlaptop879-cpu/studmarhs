@@ -920,11 +920,25 @@ function ClassCard({
 
       {/* Body */}
       <div className="bg-white px-7 pt-6 pb-7">
+        <div className="mb-4 flex items-center justify-between rounded-2xl px-4 py-3" style={{ background: theme.accentSoft }}>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: theme.accentText }}>
+              Mark Analysis
+            </div>
+            <div className="mt-0.5 text-sm font-semibold text-slate-700">
+              Sorted by high marks first, then NO, then AB.
+            </div>
+          </div>
+          <div className="rounded-full px-3 py-1 text-xs font-bold tabular-nums text-white" style={{ background: theme.accent }}>
+            / {exam.totalMarks}
+          </div>
+        </div>
+
         {/* KPI grid */}
         <div className="grid grid-cols-4 gap-3">
-          <KpiTile label="Students" value={total} accent={theme.accent} accentSoft={theme.accentSoft} icon={<BookOpen className="h-4 w-4" />} />
-          <KpiTile label="Present" value={present} accent="#059669" accentSoft="#d1fae5" icon={<Check className="h-4 w-4" />} />
-          <KpiTile label="Absent" value={absent + notWritten} accent="#dc2626" accentSoft="#fee2e2" icon={<Star className="h-4 w-4" />} />
+          <KpiTile label="Total Marks" value={`/${exam.totalMarks}`} accent={theme.accent} accentSoft={theme.accentSoft} icon={<ClipboardList className="h-4 w-4" />} />
+          <KpiTile label="Total Students" value={total} accent={theme.accent} accentSoft={theme.accentSoft} icon={<BookOpen className="h-4 w-4" />} />
+          <KpiTile label="Full Mark" value={fullMarkCount} accent="#d97706" accentSoft="#fef3c7" icon={<Award className="h-4 w-4" />} />
           <KpiTile label="Top Score" value={`${topMark}/${exam.totalMarks}`} accent={theme.accent} accentSoft={theme.accentSoft} icon={<Trophy className="h-4 w-4" />} />
         </div>
 
