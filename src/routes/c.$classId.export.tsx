@@ -310,33 +310,16 @@ function ExportPage() {
   if (!sh || !eh || !ch) return null;
   if (!cls) return null;
 
-  // Render a card offscreen with all rows, then capture as PNG.
+  // PNG exports the same card the user sees in Live Preview.
   async function handleExportPng() {
-    if (!exam || !cls || !pdfHostRef.current) return;
+    if (!exam || !cls || !cardRef.current) return;
     setBusyPng(true);
     setProgress({ kind: "png", phase: "queued", current: 0, total: 1, message: "Preparing canvas…" });
     try {
-      const host = pdfHostRef.current;
-      host.innerHTML = "";
-      const slot = document.createElement("div");
-      host.appendChild(slot);
-
-      const { createRoot } = await import("react-dom/client");
-      const root = createRoot(slot);
-      setProgress({ kind: "png", phase: "rendering", current: 0, total: 1, message: `Rendering ${rows.length} students…` });
-      await new Promise<void>((resolve) => {
-        root.render(<ClassCard exam={exam!} rows={rows} theme={theme} className={cls!.name} />);
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      });
-      await new Promise((r) => setTimeout(r, 120));
-
-      const cardEl = slot.firstElementChild as HTMLElement | null;
-      if (!cardEl) throw new Error("Could not render card");
-
-      setProgress({ kind: "png", phase: "composing", current: 1, total: 1, message: "Capturing image…" });
-      const dataUrl = await captureNode(cardEl);
-      root.unmount();
-      host.innerHTML = "";
+      setProgress({ kind: "png", phase: "rendering", current: 1, total: 1, message: `Reading live preview · ${rows.length} students…` });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      setProgress({ kind: "png", phase: "composing", current: 1, total: 1, message: "Capturing the exact preview design…" });
+      const dataUrl = await captureNode(cardRef.current);
 
       setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
@@ -641,7 +624,7 @@ function ExportPage() {
           width: CARD_WIDTH,
           pointerEvents: "none",
           visibility: "visible",
-          zIndex: -1000,
+          zIndex: 40,
         }}
       />
 
