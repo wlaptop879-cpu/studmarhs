@@ -1009,9 +1009,9 @@ function ClassCard({
             className="grid grid-cols-[70px_1fr_120px_130px] items-center px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white"
             style={{ background: headerGradient }}
           >
-            <div>Rank</div>
+            <div>S.No</div>
             <div>Student</div>
-            <div className="text-right">Score</div>
+            <div className="text-right">Mark</div>
             <div className="text-right">Percent</div>
           </div>
 
@@ -1159,8 +1159,8 @@ function InfoChip({
 }
 
 function ScoreText({ mark, total }: { mark: MarkStatus | undefined; total: number }) {
-  if (mark === "ab") return <span className="font-tamil text-rose-600">வரவில்லை</span>;
-  if (mark === "no") return <span className="font-tamil text-slate-500">—</span>;
+  if (mark === "ab") return <span className="font-bold text-rose-600">AB</span>;
+  if (mark === "no") return <span className="font-tamil text-slate-600">தேர்வு எழுதவில்லை</span>;
   if (typeof mark === "number")
     return (
       <>
@@ -1190,9 +1190,11 @@ function MarkPill({
       </span>
     );
   }
-  return (
-    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-400">
-      —
-    </span>
-  );
+  if (mark === "ab") {
+    return <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-sm font-bold text-rose-700">AB</span>;
+  }
+  if (mark === "no") {
+    return <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">NO</span>;
+  }
+  return <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-400">—</span>;
 }
