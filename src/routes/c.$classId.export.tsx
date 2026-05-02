@@ -641,8 +641,7 @@ function ExportPage() {
           width: CARD_WIDTH,
           pointerEvents: "none",
           visibility: "visible",
-          transform: "translateX(-120vw)",
-          zIndex: -1,
+          zIndex: -1000,
         }}
       />
 
