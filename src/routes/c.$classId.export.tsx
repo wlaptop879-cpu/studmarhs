@@ -215,14 +215,31 @@ const THEMES: Theme[] = [
 const PER_PAGE_PDF = 10;
 const CARD_WIDTH = 720;
 
-async function captureNode(node: HTMLElement): Promise<string> {
+async function captureNode(node: HTMLElement, desiredScale = 2.3): Promise<string> {
+  const maxSide = 14000;
+  const longestSide = Math.max(node.scrollWidth, node.scrollHeight, 1);
+  const safeScale = Math.max(1.35, Math.min(desiredScale, maxSide / longestSide));
   const canvas = await html2canvas(node, {
-    scale: 2.5,
+    scale: safeScale,
     backgroundColor: "#ffffff",
     useCORS: true,
     logging: false,
+    width: node.scrollWidth,
+    height: node.scrollHeight,
+    windowWidth: node.scrollWidth,
+    windowHeight: node.scrollHeight,
   });
   return canvas.toDataURL("image/png");
+}
+
+function saveDataUrl(dataUrl: string, filename: string) {
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 function ExportPage() {
