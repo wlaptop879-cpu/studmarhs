@@ -339,11 +339,8 @@ function ExportPage() {
       host.innerHTML = "";
 
       setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
-      const link = document.createElement("a");
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
-      link.download = `wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}-all.png`;
-      link.href = dataUrl;
-      link.click();
+      saveDataUrl(dataUrl, `wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}-all.png`);
       setProgress({ kind: "png", phase: "done", current: 1, total: 1, message: "Done!" });
       toast.success("Image downloaded");
     } catch (err) {
@@ -357,7 +354,7 @@ function ExportPage() {
     }
   }
 
-  // PDF: 10 students per page.
+  // PDF: same modern canvas design, 10 students per page for A4 readability.
   async function handleExportPdf() {
     if (!exam || !cls || !pdfHostRef.current) return;
     setBusyPdf(true);
@@ -600,7 +597,7 @@ function ExportPage() {
             </h1>
             <p className="mt-1 max-w-md text-sm text-white/85">
               Download a single beautiful <strong>PNG</strong> with all students, or a paginated{" "}
-              <strong>PDF</strong> with 10 students per page.
+              <strong>PDF</strong> with 10 students per page for clean A4 printing.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -642,7 +639,7 @@ function ExportPage() {
           top: 0,
           width: CARD_WIDTH,
           pointerEvents: "none",
-          opacity: 0,
+          visibility: "visible",
         }}
       />
 
