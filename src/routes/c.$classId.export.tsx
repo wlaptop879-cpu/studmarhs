@@ -215,14 +215,31 @@ const THEMES: Theme[] = [
 const PER_PAGE_PDF = 10;
 const CARD_WIDTH = 720;
 
-async function captureNode(node: HTMLElement): Promise<string> {
+async function captureNode(node: HTMLElement, desiredScale = 2.3): Promise<string> {
+  const maxSide = 14000;
+  const longestSide = Math.max(node.scrollWidth, node.scrollHeight, 1);
+  const safeScale = Math.max(1.35, Math.min(desiredScale, maxSide / longestSide));
   const canvas = await html2canvas(node, {
-    scale: 2.5,
+    scale: safeScale,
     backgroundColor: "#ffffff",
     useCORS: true,
     logging: false,
+    width: node.scrollWidth,
+    height: node.scrollHeight,
+    windowWidth: node.scrollWidth,
+    windowHeight: node.scrollHeight,
   });
   return canvas.toDataURL("image/png");
+}
+
+function saveDataUrl(dataUrl: string, filename: string) {
+  const link = document.createElement("a");
+  link.download = filename;
+  link.href = dataUrl;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 function ExportPage() {
@@ -293,40 +310,20 @@ function ExportPage() {
   if (!sh || !eh || !ch) return null;
   if (!cls) return null;
 
-  // Render a card offscreen with all rows, then capture as PNG.
+  // PNG exports the same card the user sees in Live Preview.
   async function handleExportPng() {
-    if (!exam || !cls || !pdfHostRef.current) return;
+    if (!exam || !cls || !cardRef.current) return;
     setBusyPng(true);
     setProgress({ kind: "png", phase: "queued", current: 0, total: 1, message: "Preparing canvas…" });
     try {
-      const host = pdfHostRef.current;
-      host.innerHTML = "";
-      const slot = document.createElement("div");
-      host.appendChild(slot);
-
-      const { createRoot } = await import("react-dom/client");
-      const root = createRoot(slot);
-      setProgress({ kind: "png", phase: "rendering", current: 0, total: 1, message: `Rendering ${rows.length} students…` });
-      await new Promise<void>((resolve) => {
-        root.render(<ClassCard exam={exam!} rows={rows} theme={theme} className={cls!.name} />);
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-      });
-      await new Promise((r) => setTimeout(r, 120));
-
-      const cardEl = slot.firstElementChild as HTMLElement | null;
-      if (!cardEl) throw new Error("Could not render card");
-
-      setProgress({ kind: "png", phase: "composing", current: 1, total: 1, message: "Capturing image…" });
-      const dataUrl = await captureNode(cardEl);
-      root.unmount();
-      host.innerHTML = "";
+      setProgress({ kind: "png", phase: "rendering", current: 1, total: 1, message: `Reading live preview · ${rows.length} students…` });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      setProgress({ kind: "png", phase: "composing", current: 1, total: 1, message: "Capturing the exact preview design…" });
+      const dataUrl = await captureNode(cardRef.current);
 
       setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
-      const link = document.createElement("a");
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
-      link.download = `wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}-all.png`;
-      link.href = dataUrl;
-      link.click();
+      saveDataUrl(dataUrl, `wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}-all.png`);
       setProgress({ kind: "png", phase: "done", current: 1, total: 1, message: "Done!" });
       toast.success("Image downloaded");
     } catch (err) {
@@ -340,7 +337,7 @@ function ExportPage() {
     }
   }
 
-  // PDF: 10 students per page.
+  // PDF: same modern canvas design, 10 students per page for A4 readability.
   async function handleExportPdf() {
     if (!exam || !cls || !pdfHostRef.current) return;
     setBusyPdf(true);
@@ -379,6 +376,7 @@ function ExportPage() {
             <ClassCard
               exam={exam!}
               rows={chunks[pageIdx]}
+              analysisRows={rows}
               theme={theme}
               className={cls!.name}
               compact
@@ -583,7 +581,7 @@ function ExportPage() {
             </h1>
             <p className="mt-1 max-w-md text-sm text-white/85">
               Download a single beautiful <strong>PNG</strong> with all students, or a paginated{" "}
-              <strong>PDF</strong> with 10 students per page.
+              <strong>PDF</strong> with 10 students per page for clean A4 printing.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -621,11 +619,12 @@ function ExportPage() {
         aria-hidden
         style={{
           position: "fixed",
-          left: -10000,
+          left: 0,
           top: 0,
           width: CARD_WIDTH,
           pointerEvents: "none",
-          opacity: 0,
+          visibility: "visible",
+          zIndex: 40,
         }}
       />
 
@@ -661,14 +660,14 @@ function ExportPage() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs font-medium text-ink-muted">Sort</Label>
+            <Label className="text-xs font-medium text-ink-muted">Export order</Label>
             <Select value={sort} onValueChange={(v) => setSort(v as SortId)}>
               <SelectTrigger className="mt-1 rounded-xl border-border bg-canvas">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="high">High → Low</SelectItem>
-                <SelectItem value="low">Low → High</SelectItem>
+                <SelectItem value="high">High → Low, then NO, then AB</SelectItem>
+                <SelectItem value="low">Low → High, then NO, then AB</SelectItem>
                 <SelectItem value="name">By name (A→Z)</SelectItem>
               </SelectContent>
             </Select>
@@ -758,6 +757,7 @@ type Row = { student: Student; mark: MarkStatus | undefined };
 function ClassCard({
   exam,
   rows,
+  analysisRows,
   theme,
   className,
   pageInfo,
@@ -766,6 +766,7 @@ function ClassCard({
 }: {
   exam: Exam;
   rows: Row[];
+  analysisRows?: Row[];
   theme: Theme;
   className: string;
   pageInfo?: { index: number; total: number; startRank: number };
@@ -773,14 +774,16 @@ function ClassCard({
   ref?: React.Ref<HTMLDivElement>;
 }) {
   const date = formatDate(exam.date);
-  const numericMarks = rows
+  const reportRows = analysisRows ?? rows;
+  const numericMarks = reportRows
     .map((r) => r.mark)
     .filter((m): m is number => typeof m === "number");
   const present = numericMarks.length;
-  const absent = rows.filter((r) => r.mark === "ab").length;
-  const notWritten = rows.filter((r) => r.mark === "no").length;
-  const total = rows.length;
+  const absent = reportRows.filter((r) => r.mark === "ab").length;
+  const notWritten = reportRows.filter((r) => r.mark === "no").length;
+  const total = reportRows.length;
   const topMark = numericMarks.length ? Math.max(...numericMarks) : 0;
+  const fullMarkCount = numericMarks.filter((m) => m === exam.totalMarks).length;
   const avgMark = numericMarks.length
     ? numericMarks.reduce((a, b) => a + b, 0) / numericMarks.length
     : 0;
@@ -899,11 +902,25 @@ function ClassCard({
 
       {/* Body */}
       <div className="bg-white px-7 pt-6 pb-7">
+        <div className="mb-4 flex items-center justify-between rounded-2xl px-4 py-3" style={{ background: theme.accentSoft }}>
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: theme.accentText }}>
+              Mark Analysis
+            </div>
+            <div className="mt-0.5 text-sm font-semibold text-slate-700">
+              Sorted by high marks first, then NO, then AB.
+            </div>
+          </div>
+          <div className="rounded-full px-3 py-1 text-xs font-bold tabular-nums text-white" style={{ background: theme.accent }}>
+            / {exam.totalMarks}
+          </div>
+        </div>
+
         {/* KPI grid */}
         <div className="grid grid-cols-4 gap-3">
-          <KpiTile label="Students" value={total} accent={theme.accent} accentSoft={theme.accentSoft} icon={<BookOpen className="h-4 w-4" />} />
-          <KpiTile label="Present" value={present} accent="#059669" accentSoft="#d1fae5" icon={<Check className="h-4 w-4" />} />
-          <KpiTile label="Absent" value={absent + notWritten} accent="#dc2626" accentSoft="#fee2e2" icon={<Star className="h-4 w-4" />} />
+          <KpiTile label="Total Marks" value={`/${exam.totalMarks}`} accent={theme.accent} accentSoft={theme.accentSoft} icon={<ClipboardList className="h-4 w-4" />} />
+          <KpiTile label="Total Students" value={total} accent={theme.accent} accentSoft={theme.accentSoft} icon={<BookOpen className="h-4 w-4" />} />
+          <KpiTile label="Full Mark" value={fullMarkCount} accent="#d97706" accentSoft="#fef3c7" icon={<Award className="h-4 w-4" />} />
           <KpiTile label="Top Score" value={`${topMark}/${exam.totalMarks}`} accent={theme.accent} accentSoft={theme.accentSoft} icon={<Trophy className="h-4 w-4" />} />
         </div>
 
@@ -974,9 +991,9 @@ function ClassCard({
             className="grid grid-cols-[70px_1fr_120px_130px] items-center px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white"
             style={{ background: headerGradient }}
           >
-            <div>Rank</div>
+            <div>S.No</div>
             <div>Student</div>
-            <div className="text-right">Score</div>
+            <div className="text-right">Mark</div>
             <div className="text-right">Percent</div>
           </div>
 
@@ -1124,8 +1141,8 @@ function InfoChip({
 }
 
 function ScoreText({ mark, total }: { mark: MarkStatus | undefined; total: number }) {
-  if (mark === "ab") return <span className="font-tamil text-rose-600">வரவில்லை</span>;
-  if (mark === "no") return <span className="font-tamil text-slate-500">—</span>;
+  if (mark === "ab") return <span className="font-bold text-rose-600">AB</span>;
+  if (mark === "no") return <span className="font-tamil text-slate-600">தேர்வு எழுதவில்லை</span>;
   if (typeof mark === "number")
     return (
       <>
@@ -1155,9 +1172,11 @@ function MarkPill({
       </span>
     );
   }
-  return (
-    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-400">
-      —
-    </span>
-  );
+  if (mark === "ab") {
+    return <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-sm font-bold text-rose-700">AB</span>;
+  }
+  if (mark === "no") {
+    return <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">NO</span>;
+  }
+  return <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-400">—</span>;
 }
