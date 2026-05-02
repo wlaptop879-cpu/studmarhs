@@ -636,11 +636,13 @@ function ExportPage() {
         aria-hidden
         style={{
           position: "fixed",
-          left: -10000,
+          left: 0,
           top: 0,
           width: CARD_WIDTH,
           pointerEvents: "none",
           visibility: "visible",
+          transform: "translateX(-120vw)",
+          zIndex: -1,
         }}
       />
 
