@@ -660,14 +660,14 @@ function ExportPage() {
             </Select>
           </div>
           <div>
-            <Label className="text-xs font-medium text-ink-muted">Sort</Label>
+            <Label className="text-xs font-medium text-ink-muted">Export order</Label>
             <Select value={sort} onValueChange={(v) => setSort(v as SortId)}>
               <SelectTrigger className="mt-1 rounded-xl border-border bg-canvas">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="high">High → Low</SelectItem>
-                <SelectItem value="low">Low → High</SelectItem>
+                <SelectItem value="high">High → Low, then NO, then AB</SelectItem>
+                <SelectItem value="low">Low → High, then NO, then AB</SelectItem>
                 <SelectItem value="name">By name (A→Z)</SelectItem>
               </SelectContent>
             </Select>
