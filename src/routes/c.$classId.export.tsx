@@ -215,6 +215,22 @@ const THEMES: Theme[] = [
 const PER_PAGE_PDF = 10;
 const CARD_WIDTH = 720;
 
+function inlineComputedStyles(source: Element, clone: Element) {
+  const sourceElements = [source, ...Array.from(source.querySelectorAll("*"))];
+  const cloneElements = [clone, ...Array.from(clone.querySelectorAll("*"))];
+
+  sourceElements.forEach((sourceEl, index) => {
+    const cloneEl = cloneElements[index] as HTMLElement | SVGElement | undefined;
+    if (!cloneEl) return;
+
+    const styles = window.getComputedStyle(sourceEl);
+    for (let i = 0; i < styles.length; i++) {
+      const property = styles.item(i);
+      cloneEl.style.setProperty(property, styles.getPropertyValue(property), styles.getPropertyPriority(property));
+    }
+  });
+}
+
 async function captureNode(node: HTMLElement, desiredScale = 2.3): Promise<string> {
   const maxSide = 14000;
   const longestSide = Math.max(node.scrollWidth, node.scrollHeight, 1);
@@ -228,6 +244,13 @@ async function captureNode(node: HTMLElement, desiredScale = 2.3): Promise<strin
     height: node.scrollHeight,
     windowWidth: node.scrollWidth,
     windowHeight: node.scrollHeight,
+    onclone: (doc, clonedElement) => {
+      inlineComputedStyles(node, clonedElement);
+      const html = doc.documentElement;
+      html.style.setProperty("background", "#ffffff");
+      doc.body.style.setProperty("background", "#ffffff");
+      doc.body.style.setProperty("margin", "0");
+    },
   });
   return canvas.toDataURL("image/png");
 }
