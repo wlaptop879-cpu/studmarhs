@@ -5,13 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import { useStudents, useExams, useClasses } from "@/hooks/useStudents";
-import {
-  CENTRE_NAME,
-  formatDate,
-  type Exam,
-  type MarkStatus,
-  type Student,
-} from "@/lib/students";
+import { CENTRE_NAME, formatDate, type Exam, type MarkStatus, type Student } from "@/lib/students";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,7 +16,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Download, FileText, Sparkles, Check, Loader2, ImageDown, GraduationCap, Calendar, ClipboardList, Trophy, Award, Star, BookOpen } from "lucide-react";
+import {
+  Download,
+  FileText,
+  Sparkles,
+  Check,
+  Loader2,
+  ImageDown,
+  GraduationCap,
+  Calendar,
+  ClipboardList,
+  Trophy,
+  Award,
+  Star,
+  BookOpen,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -215,6 +223,26 @@ const THEMES: Theme[] = [
 const PER_PAGE_PDF = 10;
 const CARD_WIDTH = 720;
 
+function inlineComputedStyles(source: Element, clone: Element) {
+  const sourceElements = [source, ...Array.from(source.querySelectorAll("*"))];
+  const cloneElements = [clone, ...Array.from(clone.querySelectorAll("*"))];
+
+  sourceElements.forEach((sourceEl, index) => {
+    const cloneEl = cloneElements[index] as HTMLElement | SVGElement | undefined;
+    if (!cloneEl) return;
+
+    const styles = window.getComputedStyle(sourceEl);
+    for (let i = 0; i < styles.length; i++) {
+      const property = styles.item(i);
+      cloneEl.style.setProperty(
+        property,
+        styles.getPropertyValue(property),
+        styles.getPropertyPriority(property),
+      );
+    }
+  });
+}
+
 async function captureNode(node: HTMLElement, desiredScale = 2.3): Promise<string> {
   const maxSide = 14000;
   const longestSide = Math.max(node.scrollWidth, node.scrollHeight, 1);
@@ -228,6 +256,13 @@ async function captureNode(node: HTMLElement, desiredScale = 2.3): Promise<strin
     height: node.scrollHeight,
     windowWidth: node.scrollWidth,
     windowHeight: node.scrollHeight,
+    onclone: (doc, clonedElement) => {
+      inlineComputedStyles(node, clonedElement);
+      const html = doc.documentElement;
+      html.style.setProperty("background", "#ffffff");
+      doc.body.style.setProperty("background", "#ffffff");
+      doc.body.style.setProperty("margin", "0");
+    },
   });
   return canvas.toDataURL("image/png");
 }
@@ -300,9 +335,7 @@ function ExportPage() {
   const stats = useMemo(() => {
     const present = rows.filter((r) => typeof r.mark === "number").length;
     const absent = rows.filter((r) => r.mark === "ab").length;
-    const numeric = rows
-      .map((r) => r.mark)
-      .filter((m): m is number => typeof m === "number");
+    const numeric = rows.map((r) => r.mark).filter((m): m is number => typeof m === "number");
     const top = numeric.length ? Math.max(...numeric) : null;
     return { total: rows.length, present, absent, top };
   }, [rows]);
@@ -314,11 +347,29 @@ function ExportPage() {
   async function handleExportPng() {
     if (!exam || !cls || !cardRef.current) return;
     setBusyPng(true);
-    setProgress({ kind: "png", phase: "queued", current: 0, total: 1, message: "Preparing canvas…" });
+    setProgress({
+      kind: "png",
+      phase: "queued",
+      current: 0,
+      total: 1,
+      message: "Preparing canvas…",
+    });
     try {
-      setProgress({ kind: "png", phase: "rendering", current: 1, total: 1, message: `Reading live preview · ${rows.length} students…` });
+      setProgress({
+        kind: "png",
+        phase: "rendering",
+        current: 1,
+        total: 1,
+        message: `Reading live preview · ${rows.length} students…`,
+      });
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      setProgress({ kind: "png", phase: "composing", current: 1, total: 1, message: "Capturing the exact preview design…" });
+      setProgress({
+        kind: "png",
+        phase: "composing",
+        current: 1,
+        total: 1,
+        message: "Capturing the exact preview design…",
+      });
       const dataUrl = await captureNode(cardRef.current);
 
       setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
@@ -348,7 +399,13 @@ function ExportPage() {
       }
       if (chunks.length === 0) chunks.push([]);
 
-      setProgress({ kind: "pdf", phase: "queued", current: 0, total: chunks.length, message: "Queued…" });
+      setProgress({
+        kind: "pdf",
+        phase: "queued",
+        current: 0,
+        total: chunks.length,
+        message: "Queued…",
+      });
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
       const pageW = pdf.internal.pageSize.getWidth();
       const pageH = pdf.internal.pageSize.getHeight();
@@ -718,13 +775,7 @@ function ExportPage() {
         </div>
         {exam && cls && (
           <div className="mx-auto w-full max-w-[720px] overflow-x-auto">
-            <ClassCard
-              ref={cardRef}
-              exam={exam}
-              rows={rows}
-              theme={theme}
-              className={cls.name}
-            />
+            <ClassCard ref={cardRef} exam={exam} rows={rows} theme={theme} className={cls.name} />
           </div>
         )}
       </div>
@@ -743,9 +794,16 @@ function StatCard({
 }) {
   return (
     <div className="relative overflow-hidden rounded-2xl border border-border bg-surface p-4 shadow-soft">
-      <div className={cn("absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br opacity-30 blur-xl", accent)} />
+      <div
+        className={cn(
+          "absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br opacity-30 blur-xl",
+          accent,
+        )}
+      />
       <div className="relative">
-        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">{label}</div>
+        <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-muted">
+          {label}
+        </div>
         <div className="mt-1 text-xl font-bold tabular-nums text-ink">{value}</div>
       </div>
     </div>
@@ -834,7 +892,10 @@ function ClassCard({
           <div className="flex items-center gap-3 min-w-0">
             <div
               className="flex h-12 w-12 items-center justify-center rounded-2xl"
-              style={{ background: "rgba(255,255,255,0.22)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3)" }}
+              style={{
+                background: "rgba(255,255,255,0.22)",
+                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3)",
+              }}
             >
               <GraduationCap className="h-7 w-7 text-white" strokeWidth={2.2} />
             </div>
@@ -849,7 +910,10 @@ function ClassCard({
           </div>
           <div
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
-            style={{ background: "rgba(255,255,255,0.22)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3)" }}
+            style={{
+              background: "rgba(255,255,255,0.22)",
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3)",
+            }}
           >
             <Trophy className="h-6 w-6 text-white" fill="rgba(255,255,255,0.35)" strokeWidth={2} />
           </div>
@@ -882,14 +946,15 @@ function ClassCard({
           {/* Avg ring */}
           <div
             className="flex shrink-0 flex-col items-center justify-center rounded-2xl px-4 py-3"
-            style={{ background: "rgba(255,255,255,0.18)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.28)" }}
+            style={{
+              background: "rgba(255,255,255,0.18)",
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.28)",
+            }}
           >
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/85">
               Class Avg
             </div>
-            <div className="text-2xl font-bold tabular-nums text-white">
-              {avgPct.toFixed(1)}%
-            </div>
+            <div className="text-2xl font-bold tabular-nums text-white">{avgPct.toFixed(1)}%</div>
           </div>
         </div>
 
@@ -902,26 +967,59 @@ function ClassCard({
 
       {/* Body */}
       <div className="bg-white px-7 pt-6 pb-7">
-        <div className="mb-4 flex items-center justify-between rounded-2xl px-4 py-3" style={{ background: theme.accentSoft }}>
+        <div
+          className="mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
+          style={{ background: theme.accentSoft }}
+        >
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em]" style={{ color: theme.accentText }}>
+            <div
+              className="text-[10px] font-bold uppercase tracking-[0.22em]"
+              style={{ color: theme.accentText }}
+            >
               Mark Analysis
             </div>
             <div className="mt-0.5 text-sm font-semibold text-slate-700">
               Sorted by high marks first, then NO, then AB.
             </div>
           </div>
-          <div className="rounded-full px-3 py-1 text-xs font-bold tabular-nums text-white" style={{ background: theme.accent }}>
+          <div
+            className="rounded-full px-3 py-1 text-xs font-bold tabular-nums text-white"
+            style={{ background: theme.accent }}
+          >
             / {exam.totalMarks}
           </div>
         </div>
 
         {/* KPI grid */}
         <div className="grid grid-cols-4 gap-3">
-          <KpiTile label="Total Marks" value={`/${exam.totalMarks}`} accent={theme.accent} accentSoft={theme.accentSoft} icon={<ClipboardList className="h-4 w-4" />} />
-          <KpiTile label="Total Students" value={total} accent={theme.accent} accentSoft={theme.accentSoft} icon={<BookOpen className="h-4 w-4" />} />
-          <KpiTile label="Full Mark" value={fullMarkCount} accent="#d97706" accentSoft="#fef3c7" icon={<Award className="h-4 w-4" />} />
-          <KpiTile label="Top Score" value={`${topMark}/${exam.totalMarks}`} accent={theme.accent} accentSoft={theme.accentSoft} icon={<Trophy className="h-4 w-4" />} />
+          <KpiTile
+            label="Total Marks"
+            value={`/${exam.totalMarks}`}
+            accent={theme.accent}
+            accentSoft={theme.accentSoft}
+            icon={<ClipboardList className="h-4 w-4" />}
+          />
+          <KpiTile
+            label="Total Students"
+            value={total}
+            accent={theme.accent}
+            accentSoft={theme.accentSoft}
+            icon={<BookOpen className="h-4 w-4" />}
+          />
+          <KpiTile
+            label="Full Mark"
+            value={fullMarkCount}
+            accent="#d97706"
+            accentSoft="#fef3c7"
+            icon={<Award className="h-4 w-4" />}
+          />
+          <KpiTile
+            label="Top Score"
+            value={`${topMark}/${exam.totalMarks}`}
+            accent={theme.accent}
+            accentSoft={theme.accentSoft}
+            icon={<Trophy className="h-4 w-4" />}
+          />
         </div>
 
         {/* Analytics row: distribution + pass rate */}
@@ -958,8 +1056,14 @@ function ClassCard({
           </div>
 
           {/* Pass rate ring */}
-          <div className="col-span-2 flex flex-col rounded-2xl p-4 ring-1 ring-slate-200/70" style={{ background: theme.accentSoft }}>
-            <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: theme.accentText }}>
+          <div
+            className="col-span-2 flex flex-col rounded-2xl p-4 ring-1 ring-slate-200/70"
+            style={{ background: theme.accentSoft }}
+          >
+            <div
+              className="text-[11px] font-bold uppercase tracking-[0.18em]"
+              style={{ color: theme.accentText }}
+            >
               Pass Rate
             </div>
             <div className="mt-2 flex items-center gap-3">
@@ -970,7 +1074,10 @@ function ClassCard({
                 }}
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
-                  <span className="text-[13px] font-bold tabular-nums" style={{ color: theme.accent }}>
+                  <span
+                    className="text-[13px] font-bold tabular-nums"
+                    style={{ color: theme.accent }}
+                  >
                     {passRate.toFixed(0)}%
                   </span>
                 </div>
@@ -1173,10 +1280,22 @@ function MarkPill({
     );
   }
   if (mark === "ab") {
-    return <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-sm font-bold text-rose-700">AB</span>;
+    return (
+      <span className="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-sm font-bold text-rose-700">
+        AB
+      </span>
+    );
   }
   if (mark === "no") {
-    return <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">NO</span>;
+    return (
+      <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">
+        NO
+      </span>
+    );
   }
-  return <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-400">—</span>;
+  return (
+    <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-400">
+      —
+    </span>
+  );
 }
