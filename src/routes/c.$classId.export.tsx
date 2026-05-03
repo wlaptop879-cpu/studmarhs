@@ -343,9 +343,10 @@ function ExportPage() {
   if (!sh || !eh || !ch) return null;
   if (!cls) return null;
 
-  // PNG exports the same card the user sees in Live Preview.
+  // PNG: render an offscreen full-width card (all students) so the export
+  // is high-resolution and never split, regardless of phone screen width.
   async function handleExportPng() {
-    if (!exam || !cls || !cardRef.current) return;
+    if (!exam || !cls || !pdfHostRef.current) return;
     setBusyPng(true);
     setProgress({
       kind: "png",
@@ -355,26 +356,52 @@ function ExportPage() {
       message: "Preparing canvas…",
     });
     try {
+      const host = pdfHostRef.current;
+      host.innerHTML = "";
+      const slot = document.createElement("div");
+      slot.style.width = `${CARD_WIDTH}px`;
+      host.appendChild(slot);
+
       setProgress({
         kind: "png",
         phase: "rendering",
         current: 1,
         total: 1,
-        message: `Reading live preview · ${rows.length} students…`,
+        message: `Rendering ${rows.length} students…`,
       });
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const { createRoot } = await import("react-dom/client");
+      const root = createRoot(slot);
+      await new Promise<void>((resolve) => {
+        root.render(
+          <ClassCard
+            exam={exam!}
+            rows={rows}
+            analysisRows={rows}
+            theme={theme}
+            className={cls!.name}
+          />,
+        );
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+      await new Promise((r) => setTimeout(r, 100));
+
+      const cardEl = slot.firstElementChild as HTMLElement | null;
+      if (!cardEl) throw new Error("Could not render card");
+
       setProgress({
         kind: "png",
         phase: "composing",
         current: 1,
         total: 1,
-        message: "Capturing the exact preview design…",
+        message: "Capturing high-resolution image…",
       });
-      const dataUrl = await captureNode(cardRef.current);
+      const dataUrl = await captureNode(cardEl, 3);
 
       setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
       saveDataUrl(dataUrl, `wisdom-${cls.name.replace(/\s+/g, "")}-${safe}-${theme.id}-all.png`);
+      root.unmount();
+      host.innerHTML = "";
       setProgress({ kind: "png", phase: "done", current: 1, total: 1, message: "Done!" });
       toast.success("Image downloaded");
     } catch (err) {
