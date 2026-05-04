@@ -373,8 +373,12 @@ function MarkInputCell({
   isLast: boolean;
 }) {
   const [text, setText] = useState<string>(value === undefined ? "" : String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Don't overwrite the user's in-progress typing in another (focused) cell
+    // — only sync local text from the prop when this input is NOT focused.
+    if (document.activeElement === inputRef.current) return;
     setText(value === undefined ? "" : String(value));
   }, [value]);
 
