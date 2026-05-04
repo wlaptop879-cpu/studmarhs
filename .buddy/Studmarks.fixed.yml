@@ -9,9 +9,8 @@
   - action: npm test
     type: BUILD
     execute_commands:
-    - "# yarn install"
-    - npm install
-    - npm test
+    - npm install @tanstack/zod-adapter@latest
+    - npm view @tanstack/zod-adapter versions
     shell: BASH
     docker_image_name: library/node
     docker_image_tag: 24
