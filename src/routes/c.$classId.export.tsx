@@ -27,9 +27,7 @@ import {
   Calendar,
   ClipboardList,
   Trophy,
-  Award,
   Star,
-  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
