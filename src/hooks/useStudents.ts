@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   type ClassRoom,
@@ -212,6 +212,11 @@ function rowToExam(r: {
 export function useExams(classId?: string) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const examsRef = useRef<Exam[]>([]);
+
+  useEffect(() => {
+    examsRef.current = exams;
+  }, [exams]);
 
   useEffect(() => {
     let alive = true;
@@ -290,16 +295,15 @@ export function useExams(classId?: string) {
 
   const setMark = useCallback(
     async (examId: string, studentId: string, mark: MarkStatus | null) => {
-      let nextMarks: Record<string, MarkStatus> = {};
+      const currentExam = examsRef.current.find((e) => e.id === examId);
+      if (!currentExam) return;
+
+      const nextMarks = { ...currentExam.marks };
+      if (mark === null) delete nextMarks[studentId];
+      else nextMarks[studentId] = mark;
+
       setExams((prev) =>
-        prev.map((e) => {
-          if (e.id !== examId) return e;
-          const next = { ...e.marks };
-          if (mark === null) delete next[studentId];
-          else next[studentId] = mark;
-          nextMarks = next;
-          return { ...e, marks: next };
-        }),
+        prev.map((e) => (e.id === examId ? { ...e, marks: nextMarks } : e)),
       );
       await supabase.from("exams").update({ marks: nextMarks }).eq("id", examId);
     },
