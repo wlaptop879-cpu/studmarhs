@@ -213,6 +213,21 @@ export function useExams(classId?: string) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const examsRef = useRef<Exam[]>([]);
+  const pendingMarksRef = useRef<Record<string, Record<string, MarkStatus | null>>>({});
+  const writeQueuesRef = useRef<Record<string, Promise<void>>>({});
+
+  const mergePendingMarks = useCallback((incoming: Exam[]) => {
+    return incoming.map((exam) => {
+      const pending = pendingMarksRef.current[exam.id];
+      if (!pending) return exam;
+      const marks = { ...exam.marks };
+      Object.entries(pending).forEach(([studentId, mark]) => {
+        if (mark === null) delete marks[studentId];
+        else marks[studentId] = mark;
+      });
+      return { ...exam, marks };
+    });
+  }, []);
 
   useEffect(() => {
     examsRef.current = exams;
@@ -226,7 +241,11 @@ export function useExams(classId?: string) {
         .select("*")
         .order("exam_date", { ascending: false });
       if (!alive) return;
-      if (data) setExams(data.map(rowToExam));
+      if (data) {
+        const next = mergePendingMarks(data.map(rowToExam));
+        examsRef.current = next;
+        setExams(next);
+      }
       setHydrated(true);
     })();
 
@@ -240,7 +259,11 @@ export function useExams(classId?: string) {
             .from("exams")
             .select("*")
             .order("exam_date", { ascending: false });
-          if (data) setExams(data.map(rowToExam));
+          if (data) {
+            const next = mergePendingMarks(data.map(rowToExam));
+            examsRef.current = next;
+            setExams(next);
+          }
         },
       )
       .subscribe();
@@ -249,7 +272,7 @@ export function useExams(classId?: string) {
       alive = false;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [mergePendingMarks]);
 
   const inClass = classId ? exams.filter((e) => e.classId === classId) : exams;
 
