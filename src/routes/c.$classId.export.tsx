@@ -220,7 +220,7 @@ const THEMES: Theme[] = [
   },
 ];
 
-const PER_PAGE_PDF = 20;
+const PER_PAGE_PDF = 10;
 const CARD_WIDTH = 720;
 
 function inlineComputedStyles(source: Element, clone: Element) {
