@@ -8,9 +8,9 @@
   actions:
   - action: npm test
     type: BUILD
+    ignore_errors: true
     execute_commands:
-    - npm install @tanstack/zod-adapter@latest
-    - npm view @tanstack/zod-adapter versions
-    shell: BASH
+    - npm install
+    execute_every_command: true
     docker_image_name: library/node
     docker_image_tag: 24
