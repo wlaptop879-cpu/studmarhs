@@ -10,7 +10,9 @@
     type: BUILD
     ignore_errors: true
     execute_commands:
-    - npm install
+    - npm install -g yarn
+    - yarn install
+    - ""
     execute_every_command: true
     docker_image_name: library/node
     docker_image_tag: 24
