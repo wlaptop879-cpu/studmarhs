@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   type ClassRoom,
@@ -212,6 +212,26 @@ function rowToExam(r: {
 export function useExams(classId?: string) {
   const [exams, setExams] = useState<Exam[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const examsRef = useRef<Exam[]>([]);
+  const pendingMarksRef = useRef<Record<string, Record<string, MarkStatus | null>>>({});
+  const writeQueuesRef = useRef<Record<string, Promise<void>>>({});
+
+  const mergePendingMarks = useCallback((incoming: Exam[]) => {
+    return incoming.map((exam) => {
+      const pending = pendingMarksRef.current[exam.id];
+      if (!pending) return exam;
+      const marks = { ...exam.marks };
+      Object.entries(pending).forEach(([studentId, mark]) => {
+        if (mark === null) delete marks[studentId];
+        else marks[studentId] = mark;
+      });
+      return { ...exam, marks };
+    });
+  }, []);
+
+  useEffect(() => {
+    examsRef.current = exams;
+  }, [exams]);
 
   useEffect(() => {
     let alive = true;
@@ -221,7 +241,11 @@ export function useExams(classId?: string) {
         .select("*")
         .order("exam_date", { ascending: false });
       if (!alive) return;
-      if (data) setExams(data.map(rowToExam));
+      if (data) {
+        const next = mergePendingMarks(data.map(rowToExam));
+        examsRef.current = next;
+        setExams(next);
+      }
       setHydrated(true);
     })();
 
@@ -235,7 +259,11 @@ export function useExams(classId?: string) {
             .from("exams")
             .select("*")
             .order("exam_date", { ascending: false });
-          if (data) setExams(data.map(rowToExam));
+          if (data) {
+            const next = mergePendingMarks(data.map(rowToExam));
+            examsRef.current = next;
+            setExams(next);
+          }
         },
       )
       .subscribe();
@@ -244,7 +272,7 @@ export function useExams(classId?: string) {
       alive = false;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [mergePendingMarks]);
 
   const inClass = classId ? exams.filter((e) => e.classId === classId) : exams;
 
@@ -290,18 +318,49 @@ export function useExams(classId?: string) {
 
   const setMark = useCallback(
     async (examId: string, studentId: string, mark: MarkStatus | null) => {
-      let nextMarks: Record<string, MarkStatus> = {};
+      const currentExam = examsRef.current.find((e) => e.id === examId);
+      if (!currentExam) return;
+
+      pendingMarksRef.current[examId] = {
+        ...(pendingMarksRef.current[examId] ?? {}),
+        [studentId]: mark,
+      };
+
+      const nextMarks = { ...currentExam.marks };
+      if (mark === null) delete nextMarks[studentId];
+      else nextMarks[studentId] = mark;
+
       setExams((prev) =>
-        prev.map((e) => {
-          if (e.id !== examId) return e;
-          const next = { ...e.marks };
-          if (mark === null) delete next[studentId];
-          else next[studentId] = mark;
-          nextMarks = next;
-          return { ...e, marks: next };
-        }),
+        prev.map((e) => (e.id === examId ? { ...e, marks: nextMarks } : e)),
       );
-      await supabase.from("exams").update({ marks: nextMarks }).eq("id", examId);
+      examsRef.current = examsRef.current.map((e) =>
+        e.id === examId ? { ...e, marks: nextMarks } : e,
+      );
+
+      const previousWrite = writeQueuesRef.current[examId] ?? Promise.resolve();
+      writeQueuesRef.current[examId] = previousWrite
+        .catch(() => undefined)
+        .then(async () => {
+          const latestExam = examsRef.current.find((e) => e.id === examId);
+          if (!latestExam) return;
+          const { error } = await supabase
+            .from("exams")
+            .update({ marks: latestExam.marks })
+            .eq("id", examId);
+          if (error) throw error;
+
+          const pending = pendingMarksRef.current[examId];
+          if (pending?.[studentId] === mark) {
+            const rest = { ...pending };
+            delete rest[studentId];
+            if (Object.keys(rest).length > 0) pendingMarksRef.current[examId] = rest;
+            else delete pendingMarksRef.current[examId];
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to save mark", error);
+        });
+      await writeQueuesRef.current[examId];
     },
     [],
   );
