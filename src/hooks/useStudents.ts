@@ -321,6 +321,11 @@ export function useExams(classId?: string) {
       const currentExam = examsRef.current.find((e) => e.id === examId);
       if (!currentExam) return;
 
+      pendingMarksRef.current[examId] = {
+        ...(pendingMarksRef.current[examId] ?? {}),
+        [studentId]: mark,
+      };
+
       const nextMarks = { ...currentExam.marks };
       if (mark === null) delete nextMarks[studentId];
       else nextMarks[studentId] = mark;
@@ -331,7 +336,30 @@ export function useExams(classId?: string) {
       examsRef.current = examsRef.current.map((e) =>
         e.id === examId ? { ...e, marks: nextMarks } : e,
       );
-      await supabase.from("exams").update({ marks: nextMarks }).eq("id", examId);
+
+      const previousWrite = writeQueuesRef.current[examId] ?? Promise.resolve();
+      writeQueuesRef.current[examId] = previousWrite
+        .catch(() => undefined)
+        .then(async () => {
+          const latestExam = examsRef.current.find((e) => e.id === examId);
+          if (!latestExam) return;
+          const { error } = await supabase
+            .from("exams")
+            .update({ marks: latestExam.marks })
+            .eq("id", examId);
+          if (error) throw error;
+
+          const pending = pendingMarksRef.current[examId];
+          if (pending?.[studentId] === mark) {
+            const { [studentId]: _savedMark, ...rest } = pending;
+            if (Object.keys(rest).length > 0) pendingMarksRef.current[examId] = rest;
+            else delete pendingMarksRef.current[examId];
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to save mark", error);
+        });
+      await writeQueuesRef.current[examId];
     },
     [],
   );
