@@ -218,7 +218,6 @@ const THEMES: Theme[] = [
   },
 ];
 
-const PER_PAGE_PDF = 10;
 const CARD_WIDTH = 720;
 
 function inlineComputedStyles(source: Element, clone: Element) {
@@ -638,8 +637,8 @@ function ExportPage() {
               Export {cls.name} Results
             </h1>
             <p className="mt-1 max-w-md text-sm text-white/85">
-              Download a single beautiful <strong>PNG</strong> with all students, or a paginated{" "}
-              <strong>PDF</strong> with 10 students per page for clean A4 printing.
+              Download a single beautiful <strong>PNG</strong> with all students, or a one-page{" "}
+              <strong>PDF</strong> scaled to fit all results.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -665,7 +664,7 @@ function ExportPage() {
               ) : (
                 <FileText className="mr-1 h-4 w-4" />
               )}
-              {busyPdf ? "Generating…" : "PDF · 10 / page"}
+              {busyPdf ? "Generating…" : "PDF · one page"}
             </Button>
           </div>
         </div>
