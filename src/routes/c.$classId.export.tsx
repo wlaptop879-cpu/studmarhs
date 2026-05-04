@@ -846,7 +846,7 @@ function ClassCard({
   theme,
   className,
   pageInfo,
-  compact,
+  compact: _compact,
   ref,
 }: {
   exam: Exam;
@@ -860,353 +860,349 @@ function ClassCard({
 }) {
   const date = formatDate(exam.date);
   const reportRows = analysisRows ?? rows;
-  const numericMarks = reportRows
-    .map((r) => r.mark)
-    .filter((m): m is number => typeof m === "number");
-  const present = numericMarks.length;
-  const absent = reportRows.filter((r) => r.mark === "ab").length;
-  const notWritten = reportRows.filter((r) => r.mark === "no").length;
-  const total = reportRows.length;
-  const topMark = numericMarks.length ? Math.max(...numericMarks) : 0;
-  const fullMarkCount = numericMarks.filter((m) => m === exam.totalMarks).length;
-  const avgMark = numericMarks.length
-    ? numericMarks.reduce((a, b) => a + b, 0) / numericMarks.length
-    : 0;
-  const avgPct = exam.totalMarks ? (avgMark / exam.totalMarks) * 100 : 0;
-  const passCount = numericMarks.filter((m) => m / exam.totalMarks >= 0.4).length;
-  const passRate = present ? (passCount / present) * 100 : 0;
-  const startRank = pageInfo?.startRank ?? 0;
-  const headerGradient = `linear-gradient(135deg, ${theme.gradFrom}, ${theme.gradTo})`;
 
-  // Distribution buckets (based on numeric marks)
-  const buckets = [
-    { label: "90-100", min: 90, color: "#10b981" },
-    { label: "75-89", min: 75, color: "#22c55e" },
-    { label: "60-74", min: 60, color: "#eab308" },
-    { label: "40-59", min: 40, color: "#f97316" },
-    { label: "0-39", min: 0, color: "#ef4444" },
-  ].map((b, idx, arr) => {
-    const next = arr[idx - 1]?.min ?? 101;
-    const count = numericMarks.filter((m) => {
-      const p = (m / exam.totalMarks) * 100;
-      return p >= b.min && p < next;
-    }).length;
-    return { ...b, count };
-  });
-  const maxBucket = Math.max(1, ...buckets.map((b) => b.count));
+  // Categorize all students for the 3 columns
+  const fullMarks = reportRows
+    .filter((r) => typeof r.mark === "number" && r.mark === exam.totalMarks)
+    .sort((a, b) => (b.mark as number) - (a.mark as number));
+
+  // If nobody scored full marks, show top scorers instead
+  const topScorers = reportRows
+    .filter((r) => typeof r.mark === "number")
+    .sort((a, b) => (b.mark as number) - (a.mark as number));
+
+  const column1 = fullMarks.length > 0 ? fullMarks : topScorers;
+
+  const lowest = reportRows
+    .filter((r) => typeof r.mark === "number" && r.mark < exam.totalMarks)
+    .sort((a, b) => (a.mark as number) - (b.mark as number));
+
+  const absent = reportRows.filter((r) => r.mark === "ab" || r.mark === "no");
+
+  // Continuous S.No across columns
+  let snoCounter = 0;
+  const withSno = (list: Row[]) =>
+    list.map((r) => {
+      snoCounter += 1;
+      return { row: r, sno: snoCounter };
+    });
+  const c1 = withSno(column1);
+  const c2 = withSno(lowest);
+  const c3 = withSno(absent);
 
   return (
     <div
       ref={ref}
-      style={{ width: CARD_WIDTH, backgroundColor: theme.pageBg }}
-      className="overflow-hidden rounded-[28px] shadow-[0_24px_60px_-20px_rgba(15,23,42,0.25)]"
+      style={{ width: CARD_WIDTH, backgroundColor: "#f8fafc", padding: 14 }}
+      className="overflow-hidden rounded-[20px]"
     >
-      {/* Hero header */}
+      {/* ===== Top dark navy banner ===== */}
       <div
-        className="relative overflow-hidden px-7 pt-6 pb-8"
-        style={{ background: headerGradient }}
+        className="relative overflow-hidden rounded-[16px] px-5 pt-4 pb-3"
+        style={{
+          background: "linear-gradient(135deg,#0b1f4d 0%,#142b6e 50%,#1a3a8a 100%)",
+          boxShadow: "0 8px 24px -10px rgba(11,31,77,0.5)",
+        }}
       >
+        {/* Decorative corner dots */}
         <div
-          className="absolute -right-20 -top-20 h-56 w-56 rounded-full"
-          style={{ background: "rgba(255,255,255,0.12)" }}
+          className="absolute left-2 top-2 h-10 w-10 opacity-30"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, #fbbf24 1.5px, transparent 1.5px)",
+            backgroundSize: "6px 6px",
+          }}
         />
         <div
-          className="absolute -bottom-24 -left-10 h-56 w-56 rounded-full"
-          style={{ background: "rgba(0,0,0,0.10)" }}
+          className="absolute right-2 bottom-2 h-10 w-10 opacity-30"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, #fbbf24 1.5px, transparent 1.5px)",
+            backgroundSize: "6px 6px",
+          }}
         />
 
-        <div className="relative flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-2xl"
-              style={{
-                background: "rgba(255,255,255,0.22)",
-                boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3)",
-              }}
-            >
-              <GraduationCap className="h-7 w-7 text-white" strokeWidth={2.2} />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/80">
-                Performance Report
-              </div>
-              <div className="mt-0.5 text-[18px] font-bold tracking-tight text-white truncate">
-                {CENTRE_NAME}
-              </div>
-            </div>
-          </div>
+        <div className="relative flex items-center gap-3">
+          {/* Left graduation icon */}
           <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
             style={{
-              background: "rgba(255,255,255,0.22)",
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.3)",
+              background:
+                "radial-gradient(circle at 30% 30%, #fde68a, #f59e0b 70%, #b45309)",
+              boxShadow: "0 4px 12px -2px rgba(245,158,11,0.5)",
             }}
           >
-            <Trophy className="h-6 w-6 text-white" fill="rgba(255,255,255,0.35)" strokeWidth={2} />
+            <GraduationCap className="h-8 w-8 text-white" strokeWidth={2.5} />
+          </div>
+
+          {/* Center title */}
+          <div className="min-w-0 flex-1 text-center">
+            <div className="flex items-center justify-center gap-1.5">
+              <Star className="h-3 w-3 text-amber-300" fill="#fbbf24" />
+              <Star className="h-4 w-4 text-amber-300" fill="#fbbf24" />
+              <Star className="h-3 w-3 text-amber-300" fill="#fbbf24" />
+            </div>
+            <div
+              className="font-tamil mt-0.5 text-[22px] font-bold leading-tight text-white"
+              style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}
+            >
+              விஸ்டம் மேக்ஸ் டியூஷன் சென்டர்
+            </div>
+            <div className="mt-0.5 text-[10px] font-bold tracking-[0.25em] text-amber-200">
+              ─ {CENTRE_NAME.toUpperCase()} ─
+            </div>
+          </div>
+
+          {/* Right trophy */}
+          <div
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle at 30% 30%, #fde68a, #f59e0b 70%, #b45309)",
+              boxShadow: "0 4px 12px -2px rgba(245,158,11,0.5)",
+            }}
+          >
+            <Trophy
+              className="h-8 w-8 text-white"
+              fill="rgba(255,255,255,0.4)"
+              strokeWidth={2.5}
+            />
           </div>
         </div>
 
-        {/* Subject + meta */}
-        <div className="relative mt-6 flex items-end justify-between gap-4">
-          <div className="min-w-0">
-            <h2
-              className={cn(
-                "font-bold tracking-tight text-white",
-                compact ? "text-3xl" : "text-[42px] leading-[1.05]",
-              )}
-            >
-              {exam.subject}
-            </h2>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/25">
-                <BookOpen className="h-3.5 w-3.5" /> {className}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/25">
-                <Calendar className="h-3.5 w-3.5" /> {date}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/25">
-                <ClipboardList className="h-3.5 w-3.5" /> /{exam.totalMarks}
-              </span>
-            </div>
-          </div>
-
-          {/* Avg ring */}
-          <div
-            className="flex shrink-0 flex-col items-center justify-center rounded-2xl px-4 py-3"
-            style={{
-              background: "rgba(255,255,255,0.18)",
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.28)",
-            }}
-          >
-            <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/85">
-              Class Avg
-            </div>
-            <div className="text-2xl font-bold tabular-nums text-white">{avgPct.toFixed(1)}%</div>
-          </div>
+        {/* Info pills row */}
+        <div className="relative mt-3 grid grid-cols-3 gap-2">
+          <InfoPill
+            icon={<Calendar className="h-4 w-4" style={{ color: "#0b1f4d" }} />}
+            iconBg="#dbeafe"
+            label="தேதி"
+            value={date}
+          />
+          <InfoPill
+            icon={<GraduationCap className="h-4 w-4" style={{ color: "#0b1f4d" }} />}
+            iconBg="#dbeafe"
+            label="வகுப்பு"
+            value={className}
+          />
+          <InfoPill
+            icon={<Trophy className="h-4 w-4" style={{ color: "#92400e" }} />}
+            iconBg="#fef3c7"
+            label="மொத்த மதிப்பெண்"
+            value={String(exam.totalMarks)}
+          />
         </div>
 
         {pageInfo && pageInfo.total > 1 && (
-          <div className="absolute right-4 top-3 rounded-full bg-black/25 px-2.5 py-0.5 text-[10px] font-bold text-white">
+          <div className="absolute right-3 top-1 rounded-full bg-black/30 px-2 py-0.5 text-[9px] font-bold text-white">
             Page {pageInfo.index + 1} / {pageInfo.total}
           </div>
         )}
       </div>
 
-      {/* Body */}
-      <div className="bg-white px-7 pt-6 pb-7">
+      {/* ===== Three columns ===== */}
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <ResultColumn
+          headerColor="#16a34a"
+          headerSoft="#dcfce7"
+          headerIcon={<Trophy className="h-3.5 w-3.5 text-white" fill="#fbbf24" />}
+          title="ஆக சிறந்த மாணவர்கள்"
+          titleSuffix={<Star className="ml-1 inline h-3 w-3" fill="#fbbf24" color="#fbbf24" />}
+          items={c1}
+          totalMarks={exam.totalMarks}
+          footerBg="#f0fdf4"
+          footerColor="#166534"
+          footerIcon={<Star className="h-3 w-3" fill="#16a34a" color="#16a34a" />}
+          footerText="வெற்றி என்பது தயாரிப்பும், முயற்சியும், விட்டாமயற்சியும் சேர்ந்த பலன்!"
+        />
+        <ResultColumn
+          headerColor="#dc2626"
+          headerSoft="#fee2e2"
+          headerIcon={<span className="text-[12px] font-bold text-white">!</span>}
+          title="கடைசி மதிப்பெண் பெற்றவர்கள்"
+          items={c2}
+          totalMarks={exam.totalMarks}
+          footerBg="#fef2f2"
+          footerColor="#991b1b"
+          footerIcon={<span className="text-sm">😔</span>}
+          footerText="தோல்வி என்பது முடிவு அல்ல, மீண்டும் முயற்சி செய்ய ஒரு வாய்ப்பு!"
+        />
+        <ResultColumn
+          headerColor="#2563eb"
+          headerSoft="#dbeafe"
+          headerIcon={<ClipboardList className="h-3.5 w-3.5 text-white" />}
+          title="தேர்வு எழுதாத மாணவர்கள்"
+          items={c3}
+          totalMarks={exam.totalMarks}
+          isAbsent
+          footerBg="#eff6ff"
+          footerColor="#1e3a8a"
+          footerIcon={<span className="text-sm">👥</span>}
+          footerText="தேர்வு எழுதுவது ஒரு நாள் இருக்கலாம், அதன் பயணம் தொடர்ட்டும்!"
+        />
+      </div>
+
+      {/* ===== Bottom motivational ribbon ===== */}
+      <div
+        className="mt-3 flex items-center justify-center gap-2 rounded-[12px] px-4 py-2"
+        style={{
+          background: "linear-gradient(90deg,#0b1f4d,#1a3a8a,#0b1f4d)",
+          boxShadow: "0 4px 12px -4px rgba(11,31,77,0.4)",
+        }}
+      >
+        <Star className="h-3.5 w-3.5 text-amber-300" fill="#fbbf24" />
+        <span className="font-tamil text-[13px] font-bold text-white">
+          முயற்சி செய்! முன்னேறு! வெற்றி நிச்சயம்!
+        </span>
+        <Star className="h-3.5 w-3.5 text-amber-300" fill="#fbbf24" />
+      </div>
+    </div>
+  );
+}
+
+function InfoPill({
+  icon,
+  iconBg,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div
+      className="flex items-center gap-2 rounded-[10px] px-2 py-1.5"
+      style={{
+        background: "rgba(255,255,255,0.95)",
+        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.6)",
+      }}
+    >
+      <div
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+        style={{ background: iconBg }}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0 leading-tight">
+        <div className="font-tamil text-[10px] font-semibold text-slate-600">{label}</div>
+        <div className="font-tamil truncate text-[12px] font-bold text-slate-900">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function ResultColumn({
+  headerColor,
+  headerSoft,
+  headerIcon,
+  title,
+  titleSuffix,
+  items,
+  totalMarks,
+  isAbsent,
+  footerBg,
+  footerColor,
+  footerIcon,
+  footerText,
+}: {
+  headerColor: string;
+  headerSoft: string;
+  headerIcon: React.ReactNode;
+  title: string;
+  titleSuffix?: React.ReactNode;
+  items: { row: Row; sno: number }[];
+  totalMarks: number;
+  isAbsent?: boolean;
+  footerBg: string;
+  footerColor: string;
+  footerIcon: React.ReactNode;
+  footerText: string;
+}) {
+  return (
+    <div
+      className="flex flex-col overflow-hidden rounded-[12px] bg-white"
+      style={{
+        boxShadow: "0 4px 14px -6px rgba(15,23,42,0.18)",
+        border: `1px solid ${headerSoft}`,
+      }}
+    >
+      {/* Column header */}
+      <div
+        className="flex items-center gap-1.5 px-2 py-1.5"
+        style={{ background: headerSoft }}
+      >
         <div
-          className="mb-4 flex items-center justify-between rounded-2xl px-4 py-3"
-          style={{ background: theme.accentSoft }}
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+          style={{ background: headerColor }}
         >
-          <div>
-            <div
-              className="text-[10px] font-bold uppercase tracking-[0.22em]"
-              style={{ color: theme.accentText }}
-            >
-              Mark Analysis
-            </div>
-            <div className="mt-0.5 text-sm font-semibold text-slate-700">
-              Sorted by high marks first, then NO, then AB.
-            </div>
-          </div>
-          <div
-            className="rounded-full px-3 py-1 text-xs font-bold tabular-nums text-white"
-            style={{ background: theme.accent }}
-          >
-            / {exam.totalMarks}
-          </div>
+          {headerIcon}
         </div>
-
-        {/* KPI grid */}
-        <div className="grid grid-cols-4 gap-3">
-          <KpiTile
-            label="Total Marks"
-            value={`/${exam.totalMarks}`}
-            accent={theme.accent}
-            accentSoft={theme.accentSoft}
-            icon={<ClipboardList className="h-4 w-4" />}
-          />
-          <KpiTile
-            label="Total Students"
-            value={total}
-            accent={theme.accent}
-            accentSoft={theme.accentSoft}
-            icon={<BookOpen className="h-4 w-4" />}
-          />
-          <KpiTile
-            label="Full Mark"
-            value={fullMarkCount}
-            accent="#d97706"
-            accentSoft="#fef3c7"
-            icon={<Award className="h-4 w-4" />}
-          />
-          <KpiTile
-            label="Top Score"
-            value={`${topMark}/${exam.totalMarks}`}
-            accent={theme.accent}
-            accentSoft={theme.accentSoft}
-            icon={<Trophy className="h-4 w-4" />}
-          />
+        <div
+          className="font-tamil flex-1 text-center text-[11px] font-bold leading-tight"
+          style={{ color: headerColor }}
+        >
+          {title}
+          {titleSuffix}
         </div>
+      </div>
 
-        {/* Analytics row: distribution + pass rate */}
-        <div className="mt-5 grid grid-cols-5 gap-3">
-          {/* Distribution chart */}
-          <div className="col-span-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200/70">
-            <div className="flex items-center justify-between">
-              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                Score Distribution
-              </div>
-              <div className="text-[10px] font-semibold text-slate-400">% bands</div>
-            </div>
-            <div className="mt-3 flex h-24 items-end gap-2">
-              {buckets.map((b) => {
-                const h = (b.count / maxBucket) * 100;
-                return (
-                  <div key={b.label} className="flex flex-1 flex-col items-center gap-1">
-                    <div className="text-[10px] font-bold tabular-nums text-slate-700">
-                      {b.count}
-                    </div>
-                    <div
-                      className="w-full rounded-t-md"
-                      style={{
-                        height: `${Math.max(h, 4)}%`,
-                        background: b.color,
-                        minHeight: 4,
-                      }}
-                    />
-                    <div className="text-[9px] font-semibold text-slate-500">{b.label}</div>
-                  </div>
-                );
-              })}
-            </div>
+      {/* Rows */}
+      <div className="flex-1 bg-white">
+        {items.length === 0 ? (
+          <div className="font-tamil px-2 py-4 text-center text-[10px] text-slate-400">
+            —
           </div>
-
-          {/* Pass rate ring */}
-          <div
-            className="col-span-2 flex flex-col rounded-2xl p-4 ring-1 ring-slate-200/70"
-            style={{ background: theme.accentSoft }}
-          >
-            <div
-              className="text-[11px] font-bold uppercase tracking-[0.18em]"
-              style={{ color: theme.accentText }}
-            >
-              Pass Rate
-            </div>
-            <div className="mt-2 flex items-center gap-3">
+        ) : (
+          items.map(({ row, sno }, i) => {
+            const zebra = i % 2 === 1 ? "#fafafa" : "#ffffff";
+            const display = isAbsent
+              ? "-"
+              : typeof row.mark === "number"
+                ? String(row.mark)
+                : row.mark === "ab"
+                  ? "AB"
+                  : row.mark === "no"
+                    ? "—"
+                    : "—";
+            return (
               <div
-                className="flex h-16 w-16 items-center justify-center rounded-full"
-                style={{
-                  background: `conic-gradient(${theme.accent} ${passRate * 3.6}deg, rgba(255,255,255,0.7) 0deg)`,
-                }}
+                key={row.student.id}
+                className="flex items-center gap-1.5 px-2 py-1"
+                style={{ background: zebra, borderTop: "1px solid #f1f5f9" }}
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white">
-                  <span
-                    className="text-[13px] font-bold tabular-nums"
-                    style={{ color: theme.accent }}
-                  >
-                    {passRate.toFixed(0)}%
-                  </span>
-                </div>
-              </div>
-              <div className="text-[12px] leading-tight">
-                <div className="font-bold" style={{ color: theme.accentText }}>
-                  {passCount} / {present}
-                </div>
-                <div className="text-slate-600">scored ≥ 40%</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Ranked table */}
-        <div className="mt-6 overflow-hidden rounded-2xl ring-1 ring-slate-200/70">
-          <div
-            className="grid grid-cols-[70px_1fr_120px_130px] items-center px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white"
-            style={{ background: headerGradient }}
-          >
-            <div>S.No</div>
-            <div>Student</div>
-            <div className="text-right">Mark</div>
-            <div className="text-right">Percent</div>
-          </div>
-
-          <div className="bg-white">
-            {rows.map((r, i) => {
-              const absoluteRank = startRank + i;
-              const medal =
-                absoluteRank === 0
-                  ? theme.gold
-                  : absoluteRank === 1
-                    ? theme.silver
-                    : absoluteRank === 2
-                      ? theme.bronze
-                      : null;
-              const zebra = i % 2 === 1 ? "#fafafa" : "#ffffff";
-              return (
                 <div
-                  key={r.student.id}
-                  className={cn(
-                    "grid grid-cols-[70px_1fr_120px_130px] items-center border-t border-slate-100 px-5",
-                    compact ? "py-2" : "py-3",
-                  )}
-                  style={{ background: zebra }}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white tabular-nums"
+                  style={{ background: headerColor }}
                 >
-                  <div className="flex items-center">
-                    {medal ? (
-                      <div
-                        className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"
-                        style={{ background: medal, boxShadow: `0 4px 12px -4px ${medal}` }}
-                      >
-                        {absoluteRank + 1}
-                      </div>
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                        {absoluteRank + 1}
-                      </div>
-                    )}
-                  </div>
-
-                  <div
-                    className={cn(
-                      "font-tamil truncate font-semibold text-slate-900",
-                      compact ? "text-sm" : "text-base",
-                    )}
-                  >
-                    {r.student.name}
-                  </div>
-
-                  <div className="text-right text-sm font-semibold text-slate-700 tabular-nums">
-                    <ScoreText mark={r.mark} total={exam.totalMarks} />
-                  </div>
-
-                  <div className="flex justify-end">
-                    <MarkPill mark={r.mark} total={exam.totalMarks} theme={theme} />
-                  </div>
+                  {sno}
                 </div>
-              );
-            })}
-          </div>
-        </div>
+                <div className="font-tamil flex-1 truncate text-[11px] font-semibold text-slate-800">
+                  {row.student.name}
+                </div>
+                <div
+                  className="text-[11px] font-bold tabular-nums"
+                  style={{ color: row.mark === totalMarks && !isAbsent ? "#16a34a" : "#334155" }}
+                >
+                  {display}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
 
-        {/* Footer */}
-        <div className="mt-5 flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
-            <div
-              className="flex h-7 w-7 items-center justify-center rounded-full"
-              style={{ background: theme.accentSoft }}
-            >
-              <Star className="h-3.5 w-3.5" style={{ color: theme.accent }} fill="currentColor" />
-            </div>
-            <span className="font-bold" style={{ color: theme.accent }}>
-              Wisdom Maths
-            </span>
-            <span className="text-slate-400">·</span>
-            <span className="text-slate-500">Analytics Report</span>
-          </div>
-          <div className="text-[11px] font-semibold text-slate-400">
-            Generated {new Date().toLocaleDateString("en-GB")}
-          </div>
+      {/* Footer */}
+      <div
+        className="flex items-start gap-1.5 px-2 py-1.5"
+        style={{ background: footerBg, borderTop: `1px solid ${headerSoft}` }}
+      >
+        <div className="mt-0.5 shrink-0">{footerIcon}</div>
+        <div
+          className="font-tamil text-[8.5px] font-semibold leading-tight"
+          style={{ color: footerColor }}
+        >
+          {footerText}
         </div>
       </div>
     </div>
