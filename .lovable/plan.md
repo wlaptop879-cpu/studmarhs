@@ -1,61 +1,76 @@
-## Problem
+## Goal
 
-The "Export Image" (PNG) and "Export PDF" buttons on `/c/$classId/export` fail. Root cause: the project's Tailwind v4 theme tokens use `oklch(...)` colors (see `src/styles.css`). The `html-to-image` library cannot serialize modern color functions (`oklch`, `color-mix`, `lab`) — it throws or produces a blank/black canvas. Tokens like `bg-canvas`, `bg-surface`, `border-border` used in the rendered card resolve to `oklch`, which breaks the capture.
+Redesign the PNG/PDF export to look exactly like the uploaded reference (dark navy header banner with trophy + graduation icon, three Tamil-titled side-by-side columns: **ஆக சிறந்த மாணவர்கள்** / **கடைசி மதிப்பெண் பெற்றவர்கள்** / **தேர்வு எழுதாத மாணவர்கள்**, plus a footer ribbon). Also fix the mark-entry "next field erases" bug and lock PDF pagination to 10 students per page.
 
-Additionally, the PDF flow currently uses 10 students/page; the user wants 30/page.
+## 1. New export card design (`src/routes/c.$classId.export.tsx` → `ClassCard`)
 
-## Fix
+Rebuild `ClassCard` to match the reference exactly:
 
-### 1. Replace `html-to-image` with `html2canvas-pro`
-`html2canvas-pro` is a maintained fork that natively supports `oklch`, `color-mix`, and Tailwind v4 color tokens. It's a drop-in for our use case.
+**Header banner** (dark navy gradient `#0b1f4d → #1a3a8a` with gold accents)
+- Left: graduation/book icon in gold laurel circle
+- Center: "விஸ்டம் மேக்ஸ் டியூஷன் சென்டர்" (large Tamil) + "WISDOM MATHS TUITION CENTRE" (small caps)
+- Right: gold trophy badge
+- Below: 3 rounded info pills — **தேதி** (date), **வகுப்பு** (class), **மொத்த மதிப்பெண்** (total marks) — each with its own icon
 
-- Add dependency: `html2canvas-pro`
-- Remove usage of `html-to-image` (`toPng`) in `src/routes/c.$classId.export.tsx`
-- New capture helper:
-  ```ts
-  const canvas = await html2canvas(node, {
-    scale: 3,
-    backgroundColor: "#ffffff",
-    useCORS: true,
-    logging: false,
-  });
-  const dataUrl = canvas.toDataURL("image/png");
-  ```
+**Three result columns** (side-by-side, equal width, white cards with colored top headers):
 
-### 2. Make the rendered card token-safe
-As an additional safety net, the `ClassCard` already uses Tailwind palette colors (orange-300, slate-900, etc., not theme tokens) for its themes — good. But the outer preview wrapper uses `bg-canvas` / `border-border`. We capture only `cardRef` (the card itself), which doesn't use theme tokens, so this is fine. No change needed inside `ClassCard`.
+| Column | Header color | Title | Filter |
+|---|---|---|---|
+| 1 | green | ஆக சிறந்த மாணவர்கள் ★ | numeric marks **= totalMarks** (full marks) — sorted high→low. If none have full marks, fall back to top scorers. |
+| 2 | red | கடைசி மதிப்பெண் பெற்றவர்கள் | numeric marks **< totalMarks** sorted low→high (lowest scorers, includes 0) |
+| 3 | blue | தேர்வு எழுதாத மாணவர்கள் | mark === `"ab"` OR `"no"` — show "—" instead of number |
 
-### 3. PDF: 30 students per page (was 10)
-Change `PER_PAGE = 10` → `PER_PAGE = 30` in `handleExportPdf`.
-Also:
-- Increase offscreen card width to 720px for better legibility at 30 rows
-- Tighten row padding inside `ClassCard` when `pageInfo` is set (compact mode) so 30 rows fit comfortably on A4 portrait
-- Update button label to "PDF (30 / page)" and helper copy
+Each row: numbered circle badge (matching column color) + Tamil name + score on the right. Use S.No that continues across columns (1..N).
 
-### 4. PNG (single page, all students) — make it reliable + attractive
-- Render a dedicated "all-in-one" capture node (offscreen, full roster) so the on-screen preview width doesn't constrain it
-- Use `html2canvas-pro` with `scale: 3`
-- Filename: `wisdom-{class}-{subject}-{theme}-all.png`
+**Footer ribbons** (matching reference):
+- Column 1 footer (green tint): "வெற்றி என்பது தயாரிப்பும், முயற்சியும், விட்டாமயற்சியும் சேர்ந்த பலன்!"
+- Column 2 footer (red tint): "தோல்வி என்பது முடிவு அல்ல, மீண்டும் முயற்சி செய்ய ஒரு வாய்ப்பு!"
+- Column 3 footer (blue tint): "தேர்வு எழுதுவது ஒரு நாள் இருக்கலாம், அதன் பயணம் தொடர்ட்டும்!"
+- Bottom dark banner: "★ முயற்சி செய்! முன்னேறு! வெற்றி நிச்சயம்! ★"
 
-### 5. UI polish for the Export page
-- Sticky action bar (Download PNG / Download PDF) with gradient brand buttons and loading spinners
-- Theme picker: larger swatches in a responsive grid, with selected state ring + checkmark
-- Add a small "Summary" stat row above preview: total students, present, absent, top scorer
-- Smooth shadow + rounded-3xl preview frame with subtle gradient backdrop
-- Mobile: stack controls; buttons full-width on small screens
-- Toasts for success/failure with the exact error message when capture fails (helps future debugging)
+Keep the existing modern KPI tiles + score distribution + pass-rate ring as a **second section below** the 3 columns (so users still get analytics), or move them above — TBD. Default: keep KPI/analytics row above the 3-column grid for richness.
 
-### 6. Error handling
-Wrap both export handlers in try/catch and surface `err.message` via toast so failures are visible instead of silent.
+Drop the older single ranked table (replaced by the 3-column layout). Keep medal styling for top scorers within column 1.
 
-## Files to change
+## 2. Fix mark-entry "next field erases" bug (`src/routes/c.$classId.marks.tsx`)
 
-- `package.json` — add `html2canvas-pro`
-- `src/routes/c.$classId.export.tsx` — swap capture lib, 30/page PDF, new offscreen all-in-one PNG path, refreshed UI, better error toasts
+Root cause: the `MarkInputCell` `useEffect([value])` resets local `text` state every time the parent re-renders with a new `marks` object. After committing mark N, the parent updates state → all sibling cells re-render → but on a fast Enter the next cell hasn't yet received focus, and the `useEffect` overwrites whatever the user just typed.
+
+Fix:
+- Track a local "dirty" flag; only sync `text` from `value` when the input is **not focused** AND not dirty.
+- OR keep `useEffect` but guard with `if (document.activeElement === inputRef.current) return;`
+- Use a `ref` on the input to do this check reliably.
+
+This stops the next focused cell from being wiped when the previous commit triggers a re-render.
+
+Also: ensure parsing accepts the keywords as already documented — `ab` → absent, `no` → did-not-write. (Already correct in `parseMarkInput`; no code change needed there, just confirm placeholder text stays helpful.)
+
+## 3. PDF: 10 students per page
+
+In `src/routes/c.$classId.export.tsx`:
+- Change `const PER_PAGE_PDF = 20` → `const PER_PAGE_PDF = 10`.
+- Update hero copy `"PDF · 20 / page"` → `"PDF · 10 / page"`.
+- Pagination logic stays (`chunks` builder already handles any size).
+
+For PDF, each page renders the **full 3-column card** but only with that page's slice of students distributed across the columns based on the same 3 filters (full-mark / lowest / absent). For PDFs we still slice the `rows` array into 10s and render the same `ClassCard`; the 3-column filter then operates on `analysisRows` (full roster) for accurate categories, while the per-page table area shows that page's slice. (Same pattern already used: `analysisRows` vs `rows`.)
+
+## 4. PNG: single all-in-one image matching reference
+
+The PNG path already renders `ClassCard` offscreen at `CARD_WIDTH=720` with `scale: 3`. After the redesign, this same path will produce the reference-style image. No structural change needed — just the new `ClassCard` markup.
+
+Filename pattern stays: `wisdom-{class}-{subject}-{theme}-all.png`.
+
+## 5. Theme picker
+
+Keep the 10 themes — they retint the header gradient + accent only. The 3-column section uses fixed green/red/blue (matching reference) regardless of theme so the semantic meaning (top/low/absent) stays consistent.
+
+## Files to edit
+
+- `src/routes/c.$classId.export.tsx` — rewrite `ClassCard`, set `PER_PAGE_PDF = 10`, update button label.
+- `src/routes/c.$classId.marks.tsx` — fix `MarkInputCell` focus-aware sync to stop erasing.
 
 ## Out of scope
 
-- No changes to data model, auth, or other routes.
-- No changes to `ClassCard` theme palette (already capture-safe).
-
-After implementation I'll verify by triggering both exports in the preview and confirming downloads succeed without console errors.
+- No data-model changes.
+- No new Tamil translation infra (strings are inline in the card).
+- No new themes.

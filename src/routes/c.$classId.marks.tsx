@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useStudents, useExams } from "@/hooks/useStudents";
 import {
   initials,
@@ -373,8 +373,12 @@ function MarkInputCell({
   isLast: boolean;
 }) {
   const [text, setText] = useState<string>(value === undefined ? "" : String(value));
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Don't overwrite the user's in-progress typing in another (focused) cell
+    // — only sync local text from the prop when this input is NOT focused.
+    if (document.activeElement === inputRef.current) return;
     setText(value === undefined ? "" : String(value));
   }, [value]);
 
@@ -406,6 +410,7 @@ function MarkInputCell({
   return (
     <div className="flex items-center gap-2">
       <Input
+        ref={inputRef}
         data-mark-idx={index}
         value={text}
         onChange={(e) => setText(e.target.value)}
