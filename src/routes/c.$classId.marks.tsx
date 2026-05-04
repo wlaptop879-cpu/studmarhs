@@ -410,6 +410,7 @@ function MarkInputCell({
   return (
     <div className="flex items-center gap-2">
       <Input
+        ref={inputRef}
         data-mark-idx={index}
         value={text}
         onChange={(e) => setText(e.target.value)}
