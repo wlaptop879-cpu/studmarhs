@@ -305,6 +305,9 @@ export function useExams(classId?: string) {
       setExams((prev) =>
         prev.map((e) => (e.id === examId ? { ...e, marks: nextMarks } : e)),
       );
+      examsRef.current = examsRef.current.map((e) =>
+        e.id === examId ? { ...e, marks: nextMarks } : e,
+      );
       await supabase.from("exams").update({ marks: nextMarks }).eq("id", examId);
     },
     [],
