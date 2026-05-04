@@ -351,7 +351,8 @@ export function useExams(classId?: string) {
 
           const pending = pendingMarksRef.current[examId];
           if (pending?.[studentId] === mark) {
-            const { [studentId]: _savedMark, ...rest } = pending;
+            const rest = { ...pending };
+            delete rest[studentId];
             if (Object.keys(rest).length > 0) pendingMarksRef.current[examId] = rest;
             else delete pendingMarksRef.current[examId];
           }
