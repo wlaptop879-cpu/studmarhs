@@ -413,22 +413,16 @@ function ExportPage() {
     }
   }
 
-  // PDF: same modern canvas design, 10 students per page for A4 readability.
+  // PDF: render the same full result card once, then scale it to fit one A4 page.
   async function handleExportPdf() {
     if (!exam || !cls || !pdfHostRef.current) return;
     setBusyPdf(true);
     try {
-      const chunks: Row[][] = [];
-      for (let i = 0; i < rows.length; i += PER_PAGE_PDF) {
-        chunks.push(rows.slice(i, i + PER_PAGE_PDF));
-      }
-      if (chunks.length === 0) chunks.push([]);
-
       setProgress({
         kind: "pdf",
         phase: "queued",
         current: 0,
-        total: chunks.length,
+        total: 1,
         message: "Queued…",
       });
       const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
@@ -440,82 +434,64 @@ function ExportPage() {
       const host = pdfHostRef.current;
       const { createRoot } = await import("react-dom/client");
 
-      for (let pageIdx = 0; pageIdx < chunks.length; pageIdx++) {
-        setProgress({
-          kind: "pdf",
-          phase: "rendering",
-          current: pageIdx + 1,
-          total: chunks.length,
-          message: `Rendering page ${pageIdx + 1} of ${chunks.length}…`,
-        });
-        host.innerHTML = "";
-        const slot = document.createElement("div");
-        host.appendChild(slot);
+      setProgress({
+        kind: "pdf",
+        phase: "rendering",
+        current: 1,
+        total: 1,
+        message: `Rendering ${rows.length} students on one page…`,
+      });
+      host.innerHTML = "";
+      const slot = document.createElement("div");
+      slot.style.width = `${CARD_WIDTH}px`;
+      host.appendChild(slot);
 
-        const root = createRoot(slot);
-        await new Promise<void>((resolve) => {
-          root.render(
-            <ClassCard
-              exam={exam!}
-              rows={chunks[pageIdx]}
-              analysisRows={rows}
-              theme={theme}
-              className={cls!.name}
-              compact
-              pageInfo={{
-                index: pageIdx,
-                total: chunks.length,
-                startRank: pageIdx * PER_PAGE_PDF,
-              }}
-            />,
-          );
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-        });
-        await new Promise((r) => setTimeout(r, 80));
+      const root = createRoot(slot);
+      await new Promise<void>((resolve) => {
+        root.render(
+          <ClassCard exam={exam!} rows={rows} analysisRows={rows} theme={theme} className={cls!.name} />,
+        );
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      });
+      await new Promise((r) => setTimeout(r, 80));
 
-        const cardEl = slot.firstElementChild as HTMLElement | null;
-        if (!cardEl) {
-          root.unmount();
-          continue;
-        }
-        setProgress({
-          kind: "pdf",
-          phase: "composing",
-          current: pageIdx + 1,
-          total: chunks.length,
-          message: `Capturing page ${pageIdx + 1} of ${chunks.length}…`,
-        });
-        const dataUrl = await captureNode(cardEl);
+      const cardEl = slot.firstElementChild as HTMLElement | null;
+      if (!cardEl) throw new Error("Could not render PDF card");
+      setProgress({
+        kind: "pdf",
+        phase: "composing",
+        current: 1,
+        total: 1,
+        message: "Capturing one-page PDF…",
+      });
+      const dataUrl = await captureNode(cardEl);
 
-        const img = new Image();
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error("Failed to load page image"));
-          img.src = dataUrl;
-        });
-        const ratio = img.height / img.width;
-        let drawW = usableW;
-        let drawH = drawW * ratio;
-        const maxH = pageH - margin * 2;
-        if (drawH > maxH) {
-          drawH = maxH;
-          drawW = drawH / ratio;
-        }
-        const x = (pageW - drawW) / 2;
-        const y = margin;
-
-        if (pageIdx > 0) pdf.addPage();
-        pdf.addImage(dataUrl, "PNG", x, y, drawW, drawH);
-
-        root.unmount();
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Failed to load page image"));
+        img.src = dataUrl;
+      });
+      const ratio = img.height / img.width;
+      const maxH = pageH - margin * 2;
+      let drawW = usableW;
+      let drawH = drawW * ratio;
+      if (drawH > maxH) {
+        drawH = maxH;
+        drawW = drawH / ratio;
       }
+      const x = (pageW - drawW) / 2;
+      const y = (pageH - drawH) / 2;
+      pdf.addImage(dataUrl, "PNG", x, y, drawW, drawH);
+
+      root.unmount();
 
       host.innerHTML = "";
       setProgress({
         kind: "pdf",
         phase: "saving",
-        current: chunks.length,
-        total: chunks.length,
+        current: 1,
+        total: 1,
         message: "Saving PDF file…",
       });
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
@@ -523,11 +499,11 @@ function ExportPage() {
       setProgress({
         kind: "pdf",
         phase: "done",
-        current: chunks.length,
-        total: chunks.length,
+        current: 1,
+        total: 1,
         message: "Done!",
       });
-      toast.success(`PDF downloaded · ${chunks.length} page${chunks.length > 1 ? "s" : ""}`);
+      toast.success("PDF downloaded · 1 page");
     } catch (err) {
       console.error(err);
       const msg = err instanceof Error ? err.message : "Unknown error";
