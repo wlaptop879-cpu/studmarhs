@@ -494,6 +494,12 @@ function MarkInputCell({
       onCommit(null);
       return true;
     }
+    const numericRaw = Number(raw.trim());
+    if (!Number.isNaN(numericRaw) && numericRaw > total) {
+      toast.error(`/${total} க்குள் மதிப்பெண் உள்ளிடவும்`);
+      setText(value === undefined ? "" : String(value));
+      return false;
+    }
     const parsed = parseMarkInput(raw, total);
     if (parsed === null) {
       toast.error('எண், "ab" (வரவில்லை) அல்லது "no" (தேர்வு எழுதவில்லை) உள்ளிடவும்');
