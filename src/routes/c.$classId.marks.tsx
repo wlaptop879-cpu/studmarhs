@@ -530,3 +530,61 @@ function MarkInputCell({
     </div>
   );
 }
+
+function MarkKeyboard({ onPress }: { onPress: (action: KeyboardAction) => void }) {
+  const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  return (
+    <div className="grid gap-3">
+      <div className="grid grid-cols-5 gap-3">
+        {digits.map((digit) => (
+          <button
+            key={digit}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPress({ type: "digit", value: digit })}
+            className="h-16 rounded-3xl bg-white text-3xl font-black text-slate-950 shadow-soft transition active:scale-95 active:bg-sky/60"
+          >
+            {digit}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPress({ type: "special", value: "ab" })}
+          className="h-20 rounded-3xl border border-rose bg-rose/50 text-center shadow-soft transition active:scale-95"
+        >
+          <span className="block text-3xl font-black text-red-500">AB</span>
+          <span className="text-xs font-semibold text-ink">Absent</span>
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPress({ type: "clear" })}
+          className="flex h-20 flex-col items-center justify-center rounded-3xl bg-white text-ink shadow-soft transition active:scale-95 active:bg-canvas"
+        >
+          <Delete className="h-9 w-9" />
+          <span className="text-xs font-semibold">Clear</span>
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPress({ type: "special", value: "no" })}
+          className="h-20 rounded-3xl border border-peach bg-peach/60 text-center shadow-soft transition active:scale-95"
+        >
+          <span className="block text-3xl font-black text-orange-500">NO</span>
+          <span className="text-xs font-semibold text-ink">No Mark</span>
+        </button>
+      </div>
+      <button
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPress({ type: "enter" })}
+        className="flex h-16 items-center justify-center gap-3 rounded-3xl bg-emerald-500 text-xl font-black text-white shadow-card transition hover:bg-emerald-600 active:scale-[0.98]"
+      >
+        <Check className="h-7 w-7" /> Enter
+      </button>
+    </div>
+  );
+}
