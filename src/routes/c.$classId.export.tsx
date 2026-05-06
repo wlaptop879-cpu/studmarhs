@@ -851,6 +851,7 @@ function ClassCard({
   analysisRows,
   theme,
   className,
+  leastMarkLimit,
   pageInfo,
   compact: _compact,
   ref,
@@ -860,6 +861,7 @@ function ClassCard({
   analysisRows?: Row[];
   theme: Theme;
   className: string;
+  leastMarkLimit?: number | null;
   pageInfo?: { index: number; total: number; startRank: number };
   compact?: boolean;
   ref?: React.Ref<HTMLDivElement>;
@@ -880,7 +882,12 @@ function ClassCard({
   const column1 = fullMarks.length > 0 ? fullMarks : topScorers;
 
   const lowest = reportRows
-    .filter((r) => typeof r.mark === "number" && r.mark < exam.totalMarks)
+    .filter(
+      (r) =>
+        typeof r.mark === "number" &&
+        r.mark < exam.totalMarks &&
+        (leastMarkLimit === null || leastMarkLimit === undefined || r.mark <= leastMarkLimit),
+    )
     .sort((a, b) => (a.mark as number) - (b.mark as number));
 
   const absent = reportRows.filter((r) => r.mark === "ab" || r.mark === "no");
