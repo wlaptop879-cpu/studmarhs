@@ -869,18 +869,6 @@ function ClassCard({
   const date = formatDate(exam.date);
   const reportRows = analysisRows ?? rows;
 
-  // Categorize all students for the 3 columns
-  const fullMarks = reportRows
-    .filter((r) => typeof r.mark === "number" && r.mark === exam.totalMarks)
-    .sort((a, b) => (b.mark as number) - (a.mark as number));
-
-  // If nobody scored full marks, show top scorers instead
-  const topScorers = reportRows
-    .filter((r) => typeof r.mark === "number")
-    .sort((a, b) => (b.mark as number) - (a.mark as number));
-
-  const column1 = fullMarks.length > 0 ? fullMarks : topScorers;
-
   const lowest = reportRows
     .filter(
       (r) =>
@@ -889,6 +877,16 @@ function ClassCard({
         (leastMarkLimit === null || leastMarkLimit === undefined || r.mark <= leastMarkLimit),
     )
     .sort((a, b) => (a.mark as number) - (b.mark as number));
+
+  const column1 = reportRows
+    .filter(
+      (r) =>
+        typeof r.mark === "number" &&
+        (leastMarkLimit === null || leastMarkLimit === undefined
+          ? r.mark === exam.totalMarks
+          : r.mark > leastMarkLimit),
+    )
+    .sort((a, b) => (b.mark as number) - (a.mark as number));
 
   const absent = reportRows.filter((r) => r.mark === "ab" || r.mark === "no");
 
