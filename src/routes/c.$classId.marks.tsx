@@ -8,6 +8,7 @@ import {
   formatMark,
   isoToDateInput,
   dateInputToIso,
+  leastMarkStorageKey,
   type Exam,
   type MarkStatus,
 } from "@/lib/students";
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Plus, Trash2, Image as ImageIcon } from "lucide-react";
+import { Check, Delete, Plus, Trash2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Select,
