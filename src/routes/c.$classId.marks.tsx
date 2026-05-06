@@ -40,6 +40,12 @@ const toneBg: Record<string, string> = {
   rose: "bg-rose",
 };
 
+type KeyboardAction =
+  | { type: "digit"; value: string }
+  | { type: "special"; value: "ab" | "no" }
+  | { type: "clear" }
+  | { type: "enter" };
+
 function MarkEntryPage() {
   const { classId } = Route.useParams();
   const { students, hydrated: sh } = useStudents(classId);
