@@ -299,12 +299,40 @@ function MarksList({
   active: Exam;
   onSet: (studentId: string, mark: MarkStatus | null) => void;
 }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [leastMarkText, setLeastMarkText] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(leastMarkStorageKey(active.id)) ?? "";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setLeastMarkText(window.localStorage.getItem(leastMarkStorageKey(active.id)) ?? "");
+  }, [active.id]);
+
+  function updateLeastMark(raw: string) {
+    const digits = raw.replace(/\D/g, "").slice(0, String(active.totalMarks).length);
+    const capped = digits ? String(Math.min(Number(digits), active.totalMarks)) : "";
+    setLeastMarkText(capped);
+    if (typeof window !== "undefined") {
+      if (capped) window.localStorage.setItem(leastMarkStorageKey(active.id), capped);
+      else window.localStorage.removeItem(leastMarkStorageKey(active.id));
+    }
+  }
+
   function focusIndex(i: number) {
-    const el = document.querySelector<HTMLInputElement>(`input[data-mark-idx="${i}"]`);
+    const safeIndex = Math.max(0, Math.min(i, students.length - 1));
+    const el = document.querySelector<HTMLInputElement>(`input[data-mark-idx="${safeIndex}"]`);
     if (el) {
       el.focus();
       el.select();
     }
+  }
+
+  function handleKeyboard(action: KeyboardAction) {
+    const target = document.querySelector<HTMLInputElement>(`input[data-mark-idx="${activeIndex}"]`);
+    target?.focus();
+    window.dispatchEvent(new CustomEvent<KeyboardAction>("wisdom-mark-key", { detail: action }));
   }
 
   return (
@@ -341,14 +369,45 @@ function MarksList({
                 index={idx}
                 value={current}
                 total={active.totalMarks}
+                active={idx === activeIndex}
+                onActive={() => setActiveIndex(idx)}
                 onCommit={(m) => onSet(s.id, m)}
-                onAdvance={() => focusIndex(idx + 1)}
+                onAdvance={() => {
+                  const next = Math.min(idx + 1, students.length - 1);
+                  setActiveIndex(next);
+                  focusIndex(next);
+                }}
                 isLast={idx === students.length - 1}
               />
             </li>
           );
         })}
       </ul>
+      <div className="sticky bottom-3 z-10 mt-4">
+        <div className="rounded-[28px] border border-white/70 bg-gradient-to-br from-sky-50 via-white to-violet-100 p-4 shadow-card backdrop-blur">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-ink-muted">
+                Touch Keyboard
+              </div>
+              <div className="font-tamil mt-1 text-xs font-semibold text-ink">
+                Student {activeIndex + 1} / {students.length}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 shadow-soft">
+              <span className="font-tamil text-[11px] font-semibold text-ink-muted">Least mark</span>
+              <Input
+                value={leastMarkText}
+                onChange={(e) => updateLeastMark(e.target.value)}
+                placeholder="ex: 35"
+                inputMode="numeric"
+                className="h-9 w-20 rounded-xl bg-canvas text-center text-sm font-bold tabular-nums"
+              />
+            </label>
+          </div>
+          <MarkKeyboard onPress={handleKeyboard} />
+        </div>
+      </div>
       {students.length > 0 && (
         <p className="font-tamil mt-3 px-1 text-[11px] text-ink-muted">
           Enter அழுத்தினால் அடுத்த மாணவருக்கு தானாக செல்லும்.
