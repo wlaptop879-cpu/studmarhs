@@ -454,7 +454,9 @@ function MarkInputCell({
     // Don't overwrite the user's in-progress typing in another (focused) cell
     // — only sync local text from the prop when this input is NOT focused.
     if (document.activeElement === inputRef.current) return;
-    setText(value === undefined ? "" : String(value));
+    const next = value === undefined ? "" : String(value);
+    textRef.current = next;
+    setText(next);
   }, [value]);
 
   useEffect(() => {
@@ -497,16 +499,21 @@ function MarkInputCell({
     const numericRaw = Number(raw.trim());
     if (!Number.isNaN(numericRaw) && numericRaw > total) {
       toast.error(`/${total} க்குள் மதிப்பெண் உள்ளிடவும்`);
-      setText(value === undefined ? "" : String(value));
+      const next = value === undefined ? "" : String(value);
+      textRef.current = next;
+      setText(next);
       return false;
     }
     const parsed = parseMarkInput(raw, total);
     if (parsed === null) {
       toast.error('எண், "ab" (வரவில்லை) அல்லது "no" (தேர்வு எழுதவில்லை) உள்ளிடவும்');
-      setText(value === undefined ? "" : String(value));
+      const next = value === undefined ? "" : String(value);
+      textRef.current = next;
+      setText(next);
       return false;
     }
     onCommit(parsed);
+    textRef.current = String(parsed);
     setText(String(parsed));
     return true;
   }
