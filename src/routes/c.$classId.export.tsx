@@ -5,7 +5,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import { useStudents, useExams, useClasses } from "@/hooks/useStudents";
-import { CENTRE_NAME, formatDate, type Exam, type MarkStatus, type Student } from "@/lib/students";
+import {
+  CENTRE_NAME,
+  formatDate,
+  leastMarkStorageKey,
+  type Exam,
+  type MarkStatus,
+  type Student,
+} from "@/lib/students";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -283,6 +290,7 @@ function ExportPage() {
   const [activeId, setActiveId] = useState<string>(examId);
   const [themeId, setThemeId] = useState<string>("azure");
   const [sort, setSort] = useState<SortId>("high");
+  const [leastMarkLimit, setLeastMarkLimit] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const pdfHostRef = useRef<HTMLDivElement>(null);
   const [busyPng, setBusyPng] = useState(false);
@@ -307,6 +315,16 @@ function ExportPage() {
     () => exams.find((e) => e.id === activeId) ?? null,
     [exams, activeId],
   );
+
+  useEffect(() => {
+    if (!activeId || typeof window === "undefined") {
+      setLeastMarkLimit(null);
+      return;
+    }
+    const raw = window.localStorage.getItem(leastMarkStorageKey(activeId));
+    const parsed = raw ? Number(raw) : Number.NaN;
+    setLeastMarkLimit(Number.isFinite(parsed) ? parsed : null);
+  }, [activeId]);
 
   const rows = useMemo(() => {
     if (!exam) return [];
