@@ -338,7 +338,9 @@ function MarksList({
   function handleKeyboard(action: KeyboardAction) {
     const target = document.querySelector<HTMLInputElement>(`input[data-mark-idx="${activeIndex}"]`);
     target?.focus();
-    window.dispatchEvent(new CustomEvent<KeyboardAction>("wisdom-mark-key", { detail: action }));
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent<KeyboardAction>("wisdom-mark-key", { detail: action }));
+    });
   }
 
   return (
