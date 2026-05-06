@@ -5,7 +5,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import { useStudents, useExams, useClasses } from "@/hooks/useStudents";
-import { CENTRE_NAME, formatDate, type Exam, type MarkStatus, type Student } from "@/lib/students";
+import {
+  CENTRE_NAME,
+  formatDate,
+  leastMarkStorageKey,
+  type Exam,
+  type MarkStatus,
+  type Student,
+} from "@/lib/students";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -283,6 +290,7 @@ function ExportPage() {
   const [activeId, setActiveId] = useState<string>(examId);
   const [themeId, setThemeId] = useState<string>("azure");
   const [sort, setSort] = useState<SortId>("high");
+  const [leastMarkLimit, setLeastMarkLimit] = useState<number | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const pdfHostRef = useRef<HTMLDivElement>(null);
   const [busyPng, setBusyPng] = useState(false);
@@ -307,6 +315,16 @@ function ExportPage() {
     () => exams.find((e) => e.id === activeId) ?? null,
     [exams, activeId],
   );
+
+  useEffect(() => {
+    if (!activeId || typeof window === "undefined") {
+      setLeastMarkLimit(null);
+      return;
+    }
+    const raw = window.localStorage.getItem(leastMarkStorageKey(activeId));
+    const parsed = raw ? Number(raw) : Number.NaN;
+    setLeastMarkLimit(Number.isFinite(parsed) ? parsed : null);
+  }, [activeId]);
 
   const rows = useMemo(() => {
     if (!exam) return [];
@@ -376,6 +394,7 @@ function ExportPage() {
             analysisRows={rows}
             theme={theme}
             className={cls!.name}
+            leastMarkLimit={leastMarkLimit}
           />,
         );
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
@@ -448,7 +467,14 @@ function ExportPage() {
       const root = createRoot(slot);
       await new Promise<void>((resolve) => {
         root.render(
-          <ClassCard exam={exam!} rows={rows} analysisRows={rows} theme={theme} className={cls!.name} />,
+          <ClassCard
+            exam={exam!}
+            rows={rows}
+            analysisRows={rows}
+            theme={theme}
+            className={cls!.name}
+            leastMarkLimit={leastMarkLimit}
+          />,
         );
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
@@ -775,7 +801,14 @@ function ExportPage() {
         </div>
         {exam && cls && (
           <div className="mx-auto w-full max-w-[720px] overflow-x-auto">
-            <ClassCard ref={cardRef} exam={exam} rows={rows} theme={theme} className={cls.name} />
+            <ClassCard
+              ref={cardRef}
+              exam={exam}
+              rows={rows}
+              theme={theme}
+              className={cls.name}
+              leastMarkLimit={leastMarkLimit}
+            />
           </div>
         )}
       </div>
@@ -818,6 +851,7 @@ function ClassCard({
   analysisRows,
   theme,
   className,
+  leastMarkLimit,
   pageInfo,
   compact: _compact,
   ref,
@@ -827,6 +861,7 @@ function ClassCard({
   analysisRows?: Row[];
   theme: Theme;
   className: string;
+  leastMarkLimit?: number | null;
   pageInfo?: { index: number; total: number; startRank: number };
   compact?: boolean;
   ref?: React.Ref<HTMLDivElement>;
@@ -834,21 +869,24 @@ function ClassCard({
   const date = formatDate(exam.date);
   const reportRows = analysisRows ?? rows;
 
-  // Categorize all students for the 3 columns
-  const fullMarks = reportRows
-    .filter((r) => typeof r.mark === "number" && r.mark === exam.totalMarks)
-    .sort((a, b) => (b.mark as number) - (a.mark as number));
-
-  // If nobody scored full marks, show top scorers instead
-  const topScorers = reportRows
-    .filter((r) => typeof r.mark === "number")
-    .sort((a, b) => (b.mark as number) - (a.mark as number));
-
-  const column1 = fullMarks.length > 0 ? fullMarks : topScorers;
-
   const lowest = reportRows
-    .filter((r) => typeof r.mark === "number" && r.mark < exam.totalMarks)
+    .filter(
+      (r) =>
+        typeof r.mark === "number" &&
+        r.mark < exam.totalMarks &&
+        (leastMarkLimit === null || leastMarkLimit === undefined || r.mark <= leastMarkLimit),
+    )
     .sort((a, b) => (a.mark as number) - (b.mark as number));
+
+  const column1 = reportRows
+    .filter(
+      (r) =>
+        typeof r.mark === "number" &&
+        (leastMarkLimit === null || leastMarkLimit === undefined
+          ? r.mark === exam.totalMarks
+          : r.mark > leastMarkLimit),
+    )
+    .sort((a, b) => (b.mark as number) - (a.mark as number));
 
   const absent = reportRows.filter((r) => r.mark === "ab" || r.mark === "no");
 

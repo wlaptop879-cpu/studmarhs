@@ -8,6 +8,7 @@ import {
   formatMark,
   isoToDateInput,
   dateInputToIso,
+  leastMarkStorageKey,
   type Exam,
   type MarkStatus,
 } from "@/lib/students";
@@ -15,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Plus, Trash2, Image as ImageIcon } from "lucide-react";
+import { Check, Delete, Plus, Trash2, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -38,6 +39,12 @@ const toneBg: Record<string, string> = {
   sky: "bg-sky",
   rose: "bg-rose",
 };
+
+type KeyboardAction =
+  | { type: "digit"; value: string }
+  | { type: "special"; value: "ab" | "no" }
+  | { type: "clear" }
+  | { type: "enter" };
 
 function MarkEntryPage() {
   const { classId } = Route.useParams();
@@ -298,12 +305,42 @@ function MarksList({
   active: Exam;
   onSet: (studentId: string, mark: MarkStatus | null) => void;
 }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [leastMarkText, setLeastMarkText] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(leastMarkStorageKey(active.id)) ?? "";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setLeastMarkText(window.localStorage.getItem(leastMarkStorageKey(active.id)) ?? "");
+  }, [active.id]);
+
+  function updateLeastMark(raw: string) {
+    const digits = raw.replace(/\D/g, "").slice(0, String(active.totalMarks).length);
+    const capped = digits ? String(Math.min(Number(digits), active.totalMarks)) : "";
+    setLeastMarkText(capped);
+    if (typeof window !== "undefined") {
+      if (capped) window.localStorage.setItem(leastMarkStorageKey(active.id), capped);
+      else window.localStorage.removeItem(leastMarkStorageKey(active.id));
+    }
+  }
+
   function focusIndex(i: number) {
-    const el = document.querySelector<HTMLInputElement>(`input[data-mark-idx="${i}"]`);
+    const safeIndex = Math.max(0, Math.min(i, students.length - 1));
+    const el = document.querySelector<HTMLInputElement>(`input[data-mark-idx="${safeIndex}"]`);
     if (el) {
       el.focus();
       el.select();
     }
+  }
+
+  function handleKeyboard(action: KeyboardAction) {
+    const target = document.querySelector<HTMLInputElement>(`input[data-mark-idx="${activeIndex}"]`);
+    target?.focus();
+    requestAnimationFrame(() => {
+      window.dispatchEvent(new CustomEvent<KeyboardAction>("wisdom-mark-key", { detail: action }));
+    });
   }
 
   return (
@@ -340,14 +377,45 @@ function MarksList({
                 index={idx}
                 value={current}
                 total={active.totalMarks}
+                active={idx === activeIndex}
+                onActive={() => setActiveIndex(idx)}
                 onCommit={(m) => onSet(s.id, m)}
-                onAdvance={() => focusIndex(idx + 1)}
+                onAdvance={() => {
+                  const next = Math.min(idx + 1, students.length - 1);
+                  setActiveIndex(next);
+                  focusIndex(next);
+                }}
                 isLast={idx === students.length - 1}
               />
             </li>
           );
         })}
       </ul>
+      <div className="sticky bottom-3 z-10 mt-4">
+        <div className="rounded-[28px] border border-white/70 bg-gradient-to-br from-sky-50 via-white to-violet-100 p-4 shadow-card backdrop-blur">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-ink-muted">
+                Touch Keyboard
+              </div>
+              <div className="font-tamil mt-1 text-xs font-semibold text-ink">
+                Student {activeIndex + 1} / {students.length}
+              </div>
+            </div>
+            <label className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 shadow-soft">
+              <span className="font-tamil text-[11px] font-semibold text-ink-muted">Least mark</span>
+              <Input
+                value={leastMarkText}
+                onChange={(e) => updateLeastMark(e.target.value)}
+                placeholder="ex: 35"
+                inputMode="numeric"
+                className="h-9 w-20 rounded-xl bg-canvas text-center text-sm font-bold tabular-nums"
+              />
+            </label>
+          </div>
+          <MarkKeyboard onPress={handleKeyboard} />
+        </div>
+      </div>
       {students.length > 0 && (
         <p className="font-tamil mt-3 px-1 text-[11px] text-ink-muted">
           Enter அழுத்தினால் அடுத்த மாணவருக்கு தானாக செல்லும்.
@@ -361,6 +429,8 @@ function MarkInputCell({
   index,
   value,
   total,
+  active,
+  onActive,
   onCommit,
   onAdvance,
   isLast,
@@ -368,32 +438,84 @@ function MarkInputCell({
   index: number;
   value: MarkStatus | undefined;
   total: number;
+  active: boolean;
+  onActive: () => void;
   onCommit: (m: MarkStatus | null) => void;
   onAdvance: () => void;
   isLast: boolean;
 }) {
   const [text, setText] = useState<string>(value === undefined ? "" : String(value));
   const inputRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef(text);
+
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
 
   useEffect(() => {
     // Don't overwrite the user's in-progress typing in another (focused) cell
     // — only sync local text from the prop when this input is NOT focused.
     if (document.activeElement === inputRef.current) return;
-    setText(value === undefined ? "" : String(value));
+    const next = value === undefined ? "" : String(value);
+    textRef.current = next;
+    setText(next);
   }, [value]);
+
+  useEffect(() => {
+    function handleKey(event: Event) {
+      if (!active) return;
+      const action = (event as CustomEvent<KeyboardAction>).detail;
+      if (!action) return;
+      inputRef.current?.focus();
+      if (action.type === "digit") {
+        setText((prev) => {
+          const next = prev.toLowerCase() === "ab" || prev.toLowerCase() === "no" ? action.value : `${prev}${action.value}`;
+          textRef.current = next;
+          return next;
+        });
+      } else if (action.type === "special") {
+        textRef.current = action.value;
+        setText(action.value);
+        onCommit(action.value);
+      } else if (action.type === "clear") {
+        setText((prev) => {
+          const next = prev.slice(0, -1);
+          textRef.current = next;
+          return next;
+        });
+      } else if (action.type === "enter") {
+        const ok = commit(textRef.current);
+        if (ok && !isLast) onAdvance();
+        else if (ok) inputRef.current?.blur();
+      }
+    }
+    window.addEventListener("wisdom-mark-key", handleKey);
+    return () => window.removeEventListener("wisdom-mark-key", handleKey);
+  }, [active, isLast, onAdvance, onCommit, text]);
 
   function commit(raw: string): boolean {
     if (raw.trim() === "") {
       onCommit(null);
       return true;
     }
+    const numericRaw = Number(raw.trim());
+    if (!Number.isNaN(numericRaw) && numericRaw > total) {
+      toast.error(`/${total} க்குள் மதிப்பெண் உள்ளிடவும்`);
+      const next = value === undefined ? "" : String(value);
+      textRef.current = next;
+      setText(next);
+      return false;
+    }
     const parsed = parseMarkInput(raw, total);
     if (parsed === null) {
       toast.error('எண், "ab" (வரவில்லை) அல்லது "no" (தேர்வு எழுதவில்லை) உள்ளிடவும்');
-      setText(value === undefined ? "" : String(value));
+      const next = value === undefined ? "" : String(value);
+      textRef.current = next;
+      setText(next);
       return false;
     }
     onCommit(parsed);
+    textRef.current = String(parsed);
     setText(String(parsed));
     return true;
   }
@@ -413,7 +535,11 @@ function MarkInputCell({
         ref={inputRef}
         data-mark-idx={index}
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onFocus={onActive}
+        onChange={(e) => {
+          textRef.current = e.target.value;
+          setText(e.target.value);
+        }}
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -433,6 +559,64 @@ function MarkInputCell({
       <span className="hidden w-24 text-[10px] uppercase tracking-wider text-ink-muted sm:block">
         {value === undefined ? "Pending" : formatMark(value)}
       </span>
+    </div>
+  );
+}
+
+function MarkKeyboard({ onPress }: { onPress: (action: KeyboardAction) => void }) {
+  const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  return (
+    <div className="grid gap-3">
+      <div className="grid grid-cols-5 gap-3">
+        {digits.map((digit) => (
+          <button
+            key={digit}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPress({ type: "digit", value: digit })}
+            className="h-16 rounded-3xl bg-white text-3xl font-black text-slate-950 shadow-soft transition active:scale-95 active:bg-sky/60"
+          >
+            {digit}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPress({ type: "special", value: "ab" })}
+          className="h-20 rounded-3xl border border-rose bg-rose/50 text-center shadow-soft transition active:scale-95"
+        >
+          <span className="block text-3xl font-black text-red-500">AB</span>
+          <span className="text-xs font-semibold text-ink">Absent</span>
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPress({ type: "clear" })}
+          className="flex h-20 flex-col items-center justify-center rounded-3xl bg-white text-ink shadow-soft transition active:scale-95 active:bg-canvas"
+        >
+          <Delete className="h-9 w-9" />
+          <span className="text-xs font-semibold">Clear</span>
+        </button>
+        <button
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onPress({ type: "special", value: "no" })}
+          className="h-20 rounded-3xl border border-peach bg-peach/60 text-center shadow-soft transition active:scale-95"
+        >
+          <span className="block text-3xl font-black text-orange-500">NO</span>
+          <span className="text-xs font-semibold text-ink">No Mark</span>
+        </button>
+      </div>
+      <button
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPress({ type: "enter" })}
+        className="flex h-16 items-center justify-center gap-3 rounded-3xl bg-emerald-500 text-xl font-black text-white shadow-card transition hover:bg-emerald-600 active:scale-[0.98]"
+      >
+        <Check className="h-7 w-7" /> Enter
+      </button>
     </div>
   );
 }

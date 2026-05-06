@@ -100,6 +100,10 @@ export function nowTimeHHmm(): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+export function leastMarkStorageKey(examId: string): string {
+  return `wisdom-least-mark-limit:${examId}`;
+}
+
 // Format "HH:mm" -> "9:15 AM"
 export function formatTime12(hhmm?: string): string {
   if (!hhmm) return "—";
