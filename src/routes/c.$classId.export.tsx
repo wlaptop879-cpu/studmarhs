@@ -394,6 +394,7 @@ function ExportPage() {
             analysisRows={rows}
             theme={theme}
             className={cls!.name}
+            leastMarkLimit={leastMarkLimit}
           />,
         );
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
@@ -466,7 +467,14 @@ function ExportPage() {
       const root = createRoot(slot);
       await new Promise<void>((resolve) => {
         root.render(
-          <ClassCard exam={exam!} rows={rows} analysisRows={rows} theme={theme} className={cls!.name} />,
+          <ClassCard
+            exam={exam!}
+            rows={rows}
+            analysisRows={rows}
+            theme={theme}
+            className={cls!.name}
+            leastMarkLimit={leastMarkLimit}
+          />,
         );
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
       });
@@ -793,7 +801,14 @@ function ExportPage() {
         </div>
         {exam && cls && (
           <div className="mx-auto w-full max-w-[720px] overflow-x-auto">
-            <ClassCard ref={cardRef} exam={exam} rows={rows} theme={theme} className={cls.name} />
+            <ClassCard
+              ref={cardRef}
+              exam={exam}
+              rows={rows}
+              theme={theme}
+              className={cls.name}
+              leastMarkLimit={leastMarkLimit}
+            />
           </div>
         )}
       </div>
