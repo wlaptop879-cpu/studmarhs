@@ -427,6 +427,8 @@ function MarkInputCell({
   index,
   value,
   total,
+  active,
+  onActive,
   onCommit,
   onAdvance,
   isLast,
@@ -434,6 +436,8 @@ function MarkInputCell({
   index: number;
   value: MarkStatus | undefined;
   total: number;
+  active: boolean;
+  onActive: () => void;
   onCommit: (m: MarkStatus | null) => void;
   onAdvance: () => void;
   isLast: boolean;
@@ -447,6 +451,29 @@ function MarkInputCell({
     if (document.activeElement === inputRef.current) return;
     setText(value === undefined ? "" : String(value));
   }, [value]);
+
+  useEffect(() => {
+    function handleKey(event: Event) {
+      if (!active) return;
+      const action = (event as CustomEvent<KeyboardAction>).detail;
+      if (!action) return;
+      inputRef.current?.focus();
+      if (action.type === "digit") {
+        setText((prev) => (prev.toLowerCase() === "ab" || prev.toLowerCase() === "no" ? action.value : `${prev}${action.value}`));
+      } else if (action.type === "special") {
+        setText(action.value);
+        onCommit(action.value);
+      } else if (action.type === "clear") {
+        setText((prev) => prev.slice(0, -1));
+      } else if (action.type === "enter") {
+        const ok = commit(text);
+        if (ok && !isLast) onAdvance();
+        else if (ok) inputRef.current?.blur();
+      }
+    }
+    window.addEventListener("wisdom-mark-key", handleKey);
+    return () => window.removeEventListener("wisdom-mark-key", handleKey);
+  }, [active, isLast, onAdvance, onCommit, text]);
 
   function commit(raw: string): boolean {
     if (raw.trim() === "") {
@@ -479,6 +506,7 @@ function MarkInputCell({
         ref={inputRef}
         data-mark-idx={index}
         value={text}
+        onFocus={onActive}
         onChange={(e) => setText(e.target.value)}
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => {
