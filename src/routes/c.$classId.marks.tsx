@@ -444,6 +444,11 @@ function MarkInputCell({
 }) {
   const [text, setText] = useState<string>(value === undefined ? "" : String(value));
   const inputRef = useRef<HTMLInputElement>(null);
+  const textRef = useRef(text);
+
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
 
   useEffect(() => {
     // Don't overwrite the user's in-progress typing in another (focused) cell
@@ -459,14 +464,23 @@ function MarkInputCell({
       if (!action) return;
       inputRef.current?.focus();
       if (action.type === "digit") {
-        setText((prev) => (prev.toLowerCase() === "ab" || prev.toLowerCase() === "no" ? action.value : `${prev}${action.value}`));
+        setText((prev) => {
+          const next = prev.toLowerCase() === "ab" || prev.toLowerCase() === "no" ? action.value : `${prev}${action.value}`;
+          textRef.current = next;
+          return next;
+        });
       } else if (action.type === "special") {
+        textRef.current = action.value;
         setText(action.value);
         onCommit(action.value);
       } else if (action.type === "clear") {
-        setText((prev) => prev.slice(0, -1));
+        setText((prev) => {
+          const next = prev.slice(0, -1);
+          textRef.current = next;
+          return next;
+        });
       } else if (action.type === "enter") {
-        const ok = commit(text);
+        const ok = commit(textRef.current);
         if (ok && !isLast) onAdvance();
         else if (ok) inputRef.current?.blur();
       }
@@ -507,7 +521,10 @@ function MarkInputCell({
         data-mark-idx={index}
         value={text}
         onFocus={onActive}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => {
+          textRef.current = e.target.value;
+          setText(e.target.value);
+        }}
         onBlur={(e) => commit(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
