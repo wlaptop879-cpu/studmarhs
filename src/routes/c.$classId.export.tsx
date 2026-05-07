@@ -411,7 +411,7 @@ function ExportPage() {
         total: 1,
         message: "Capturing high-resolution image…",
       });
-      const dataUrl = await captureNode(cardEl, 3);
+      const dataUrl = await captureNode(cardEl, 4);
 
       setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
