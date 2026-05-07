@@ -489,7 +489,7 @@ function ExportPage() {
         total: 1,
         message: "Capturing one-page PDF…",
       });
-      const dataUrl = await captureNode(cardEl);
+      const dataUrl = await captureNode(cardEl, 3.5);
 
       const img = new Image();
       await new Promise<void>((resolve, reject) => {
