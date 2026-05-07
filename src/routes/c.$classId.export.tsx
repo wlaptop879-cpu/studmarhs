@@ -225,7 +225,7 @@ const THEMES: Theme[] = [
   },
 ];
 
-const CARD_WIDTH = 720;
+const CARD_WIDTH = 960;
 
 function inlineComputedStyles(source: Element, clone: Element) {
   const sourceElements = [source, ...Array.from(source.querySelectorAll("*"))];
@@ -411,7 +411,7 @@ function ExportPage() {
         total: 1,
         message: "Capturing high-resolution image…",
       });
-      const dataUrl = await captureNode(cardEl, 3);
+      const dataUrl = await captureNode(cardEl, 4);
 
       setProgress({ kind: "png", phase: "saving", current: 1, total: 1, message: "Saving file…" });
       const safe = exam.subject.replace(/[^a-z0-9_-]+/gi, "_");
@@ -489,7 +489,7 @@ function ExportPage() {
         total: 1,
         message: "Capturing one-page PDF…",
       });
-      const dataUrl = await captureNode(cardEl);
+      const dataUrl = await captureNode(cardEl, 3.5);
 
       const img = new Image();
       await new Promise<void>((resolve, reject) => {
@@ -800,7 +800,7 @@ function ExportPage() {
           <Download className="h-3 w-3" /> Live Preview
         </div>
         {exam && cls && (
-          <div className="mx-auto w-full max-w-[720px] overflow-x-auto">
+          <div className="mx-auto w-full max-w-[960px] overflow-x-auto">
             <ClassCard
               ref={cardRef}
               exam={exam}
@@ -869,6 +869,7 @@ function ClassCard({
   const date = formatDate(exam.date);
   const reportRows = analysisRows ?? rows;
 
+  // Column 2: lowest scorers — sorted worst → best (low → high)
   const lowest = reportRows
     .filter(
       (r) =>
@@ -876,8 +877,9 @@ function ClassCard({
         r.mark < exam.totalMarks &&
         (leastMarkLimit === null || leastMarkLimit === undefined || r.mark <= leastMarkLimit),
     )
-    .sort((a, b) => (b.mark as number) - (a.mark as number));
+    .sort((a, b) => (a.mark as number) - (b.mark as number));
 
+  // Column 1: top scorers — sorted best → worst (high → low)
   const column1 = reportRows
     .filter(
       (r) =>
@@ -888,7 +890,9 @@ function ClassCard({
     )
     .sort((a, b) => (b.mark as number) - (a.mark as number));
 
-  const absent = reportRows.filter((r) => r.mark === "ab" || r.mark === "no");
+  // Column 3 split: NO = did-not-write, Column 4: AB = absent
+  const noWrite = reportRows.filter((r) => r.mark === "no");
+  const absentOnly = reportRows.filter((r) => r.mark === "ab");
 
   // Continuous S.No across columns
   let snoCounter = 0;
@@ -899,7 +903,8 @@ function ClassCard({
     });
   const c1 = withSno(column1);
   const c2 = withSno(lowest);
-  const c3 = withSno(absent);
+  const c3 = withSno(noWrite);
+  const c4 = withSno(absentOnly);
 
   return (
     <div
@@ -1010,8 +1015,8 @@ function ClassCard({
         )}
       </div>
 
-      {/* ===== Three columns ===== */}
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      {/* ===== Result columns ===== */}
+      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
         <ResultColumn
           headerColor="#16a34a"
           headerSoft="#dcfce7"
@@ -1049,6 +1054,19 @@ function ClassCard({
           footerColor="#1e3a8a"
           footerIcon={<span className="text-sm">👥</span>}
           footerText="தேர்வு எழுதுவது ஒரு நாள் இருக்கலாம், அதன் பயணம் தொடர்ட்டும்!"
+        />
+        <ResultColumn
+          headerColor="#9333ea"
+          headerSoft="#ede9fe"
+          headerIcon={<span className="text-[10px] font-bold text-white">AB</span>}
+          title="வரவில்லை (Absent)"
+          items={c4}
+          totalMarks={exam.totalMarks}
+          isAbsent
+          footerBg="#faf5ff"
+          footerColor="#581c87"
+          footerIcon={<span className="text-sm">📝</span>}
+          footerText="வரவில்லை என்பது தற்காலிகமான இடைவெளி மட்டுமே!"
         />
       </div>
 

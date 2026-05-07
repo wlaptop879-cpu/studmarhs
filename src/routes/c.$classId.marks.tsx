@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Check, Delete, Plus, Trash2, Image as ImageIcon } from "lucide-react";
+import { Check, Delete, Plus, Trash2, Image as ImageIcon, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -296,6 +296,23 @@ function NewExamForm({
   );
 }
 
+type KbSize = "compact" | "regular" | "large";
+type KbSettings = {
+  showAb: boolean;
+  showNo: boolean;
+  showClear: boolean;
+  showEnter: boolean;
+  size: KbSize;
+};
+const KB_SETTINGS_KEY = "wisdom-keyboard-settings-v1";
+const DEFAULT_KB: KbSettings = {
+  showAb: true,
+  showNo: true,
+  showClear: true,
+  showEnter: true,
+  size: "regular",
+};
+
 function MarksList({
   students,
   active,
@@ -306,6 +323,25 @@ function MarksList({
   onSet: (studentId: string, mark: MarkStatus | null) => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [kbOpen, setKbOpen] = useState(false);
+  const [kb, setKb] = useState<KbSettings>(() => {
+    if (typeof window === "undefined") return DEFAULT_KB;
+    try {
+      const raw = window.localStorage.getItem(KB_SETTINGS_KEY);
+      return raw ? { ...DEFAULT_KB, ...JSON.parse(raw) } : DEFAULT_KB;
+    } catch {
+      return DEFAULT_KB;
+    }
+  });
+  function updateKb(patch: Partial<KbSettings>) {
+    setKb((prev) => {
+      const next = { ...prev, ...patch };
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(KB_SETTINGS_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  }
   const [leastMarkText, setLeastMarkText] = useState(() => {
     if (typeof window === "undefined") return "";
     return window.localStorage.getItem(leastMarkStorageKey(active.id)) ?? "";
@@ -402,18 +438,80 @@ function MarksList({
                 Student {activeIndex + 1} / {students.length}
               </div>
             </div>
-            <label className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 shadow-soft">
-              <span className="font-tamil text-[11px] font-semibold text-ink-muted">Least mark</span>
-              <Input
-                value={leastMarkText}
-                onChange={(e) => updateLeastMark(e.target.value)}
-                placeholder="ex: 35"
-                inputMode="numeric"
-                className="h-9 w-20 rounded-xl bg-canvas text-center text-sm font-bold tabular-nums"
-              />
-            </label>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 shadow-soft">
+                <span className="font-tamil text-[11px] font-semibold text-ink-muted">Least mark</span>
+                <Input
+                  value={leastMarkText}
+                  onChange={(e) => updateLeastMark(e.target.value)}
+                  placeholder="ex: 35"
+                  inputMode="numeric"
+                  className="h-9 w-20 rounded-xl bg-canvas text-center text-sm font-bold tabular-nums"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setKbOpen((v) => !v)}
+                className={cn(
+                  "flex h-9 items-center gap-1 rounded-2xl px-3 text-[11px] font-semibold shadow-soft transition",
+                  kbOpen ? "bg-ink text-surface" : "bg-white/80 text-ink hover:bg-white",
+                )}
+                title="Keyboard settings"
+              >
+                <Settings2 className="h-3.5 w-3.5" /> Keys
+              </button>
+            </div>
           </div>
-          <MarkKeyboard onPress={handleKeyboard} />
+          {kbOpen && (
+            <div className="mb-3 rounded-2xl border border-white/80 bg-white/70 p-3 shadow-soft">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-ink-muted">
+                Show keys
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ["showAb", "AB"],
+                  ["showNo", "NO"],
+                  ["showClear", "Clear"],
+                  ["showEnter", "Enter"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => updateKb({ [key]: !kb[key] } as Partial<KbSettings>)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-[11px] font-semibold transition",
+                      kb[key]
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-border bg-canvas text-ink-muted",
+                    )}
+                  >
+                    {kb[key] ? "✓ " : ""}{label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-ink-muted">
+                Button size
+              </div>
+              <div className="flex gap-2">
+                {(["compact", "regular", "large"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => updateKb({ size: s })}
+                    className={cn(
+                      "flex-1 rounded-full border px-3 py-1.5 text-[11px] font-semibold capitalize transition",
+                      kb.size === s
+                        ? "border-ink bg-ink text-surface"
+                        : "border-border bg-canvas text-ink-muted",
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <MarkKeyboard onPress={handleKeyboard} settings={kb} />
         </div>
       </div>
       {students.length > 0 && (
@@ -567,60 +665,97 @@ function MarkInputCell({
   );
 }
 
-function MarkKeyboard({ onPress }: { onPress: (action: KeyboardAction) => void }) {
+function MarkKeyboard({
+  onPress,
+  settings,
+}: {
+  onPress: (action: KeyboardAction) => void;
+  settings: KbSettings;
+}) {
   const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  const sizing = {
+    compact: { digit: "h-12 text-2xl", special: "h-14", enter: "h-12 text-base", icon: "h-6 w-6", gap: "gap-2" },
+    regular: { digit: "h-16 text-3xl", special: "h-20", enter: "h-16 text-xl", icon: "h-7 w-7", gap: "gap-3" },
+    large: { digit: "h-20 text-4xl", special: "h-24", enter: "h-20 text-2xl", icon: "h-8 w-8", gap: "gap-4" },
+  }[settings.size];
+
+  const specials: React.ReactNode[] = [];
+  if (settings.showAb) {
+    specials.push(
+      <button
+        key="ab"
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPress({ type: "special", value: "ab" })}
+        className={cn("rounded-3xl border border-rose bg-rose/50 text-center shadow-soft transition active:scale-95", sizing.special)}
+      >
+        <span className="block text-2xl font-black text-red-500">AB</span>
+        <span className="text-[11px] font-semibold text-ink">Absent</span>
+      </button>,
+    );
+  }
+  if (settings.showClear) {
+    specials.push(
+      <button
+        key="clear"
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPress({ type: "clear" })}
+        className={cn("flex flex-col items-center justify-center rounded-3xl bg-white text-ink shadow-soft transition active:scale-95 active:bg-canvas", sizing.special)}
+      >
+        <Delete className={sizing.icon} />
+        <span className="text-[11px] font-semibold">Clear</span>
+      </button>,
+    );
+  }
+  if (settings.showNo) {
+    specials.push(
+      <button
+        key="no"
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPress({ type: "special", value: "no" })}
+        className={cn("rounded-3xl border border-peach bg-peach/60 text-center shadow-soft transition active:scale-95", sizing.special)}
+      >
+        <span className="block text-2xl font-black text-orange-500">NO</span>
+        <span className="text-[11px] font-semibold text-ink">No Mark</span>
+      </button>,
+    );
+  }
+
   return (
-    <div className="grid gap-3">
-      <div className="grid grid-cols-5 gap-3">
+    <div className={cn("grid", sizing.gap)}>
+      <div className={cn("grid grid-cols-5", sizing.gap)}>
         {digits.map((digit) => (
           <button
             key={digit}
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onPress({ type: "digit", value: digit })}
-            className="h-16 rounded-3xl bg-white text-3xl font-black text-slate-950 shadow-soft transition active:scale-95 active:bg-sky/60"
+            className={cn("rounded-3xl bg-white font-black text-slate-950 shadow-soft transition active:scale-95 active:bg-sky/60", sizing.digit)}
           >
             {digit}
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      {specials.length > 0 && (
+        <div
+          className={cn("grid", sizing.gap)}
+          style={{ gridTemplateColumns: `repeat(${specials.length}, minmax(0, 1fr))` }}
+        >
+          {specials}
+        </div>
+      )}
+      {settings.showEnter && (
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onPress({ type: "special", value: "ab" })}
-          className="h-20 rounded-3xl border border-rose bg-rose/50 text-center shadow-soft transition active:scale-95"
+          onClick={() => onPress({ type: "enter" })}
+          className={cn("flex items-center justify-center gap-3 rounded-3xl bg-emerald-500 font-black text-white shadow-card transition hover:bg-emerald-600 active:scale-[0.98]", sizing.enter)}
         >
-          <span className="block text-3xl font-black text-red-500">AB</span>
-          <span className="text-xs font-semibold text-ink">Absent</span>
+          <Check className={sizing.icon} /> Enter
         </button>
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onPress({ type: "clear" })}
-          className="flex h-20 flex-col items-center justify-center rounded-3xl bg-white text-ink shadow-soft transition active:scale-95 active:bg-canvas"
-        >
-          <Delete className="h-9 w-9" />
-          <span className="text-xs font-semibold">Clear</span>
-        </button>
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onPress({ type: "special", value: "no" })}
-          className="h-20 rounded-3xl border border-peach bg-peach/60 text-center shadow-soft transition active:scale-95"
-        >
-          <span className="block text-3xl font-black text-orange-500">NO</span>
-          <span className="text-xs font-semibold text-ink">No Mark</span>
-        </button>
-      </div>
-      <button
-        type="button"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => onPress({ type: "enter" })}
-        className="flex h-16 items-center justify-center gap-3 rounded-3xl bg-emerald-500 text-xl font-black text-white shadow-card transition hover:bg-emerald-600 active:scale-[0.98]"
-      >
-        <Check className="h-7 w-7" /> Enter
-      </button>
+      )}
     </div>
   );
 }
