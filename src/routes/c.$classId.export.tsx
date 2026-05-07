@@ -876,7 +876,7 @@ function ClassCard({
         r.mark < exam.totalMarks &&
         (leastMarkLimit === null || leastMarkLimit === undefined || r.mark <= leastMarkLimit),
     )
-    .sort((a, b) => (a.mark as number) - (b.mark as number));
+    .sort((a, b) => (b.mark as number) - (a.mark as number));
 
   const column1 = reportRows
     .filter(
