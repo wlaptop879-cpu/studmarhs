@@ -438,18 +438,80 @@ function MarksList({
                 Student {activeIndex + 1} / {students.length}
               </div>
             </div>
-            <label className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 shadow-soft">
-              <span className="font-tamil text-[11px] font-semibold text-ink-muted">Least mark</span>
-              <Input
-                value={leastMarkText}
-                onChange={(e) => updateLeastMark(e.target.value)}
-                placeholder="ex: 35"
-                inputMode="numeric"
-                className="h-9 w-20 rounded-xl bg-canvas text-center text-sm font-bold tabular-nums"
-              />
-            </label>
+            <div className="flex items-center gap-2">
+              <label className="flex items-center gap-2 rounded-2xl bg-white/80 px-3 py-2 shadow-soft">
+                <span className="font-tamil text-[11px] font-semibold text-ink-muted">Least mark</span>
+                <Input
+                  value={leastMarkText}
+                  onChange={(e) => updateLeastMark(e.target.value)}
+                  placeholder="ex: 35"
+                  inputMode="numeric"
+                  className="h-9 w-20 rounded-xl bg-canvas text-center text-sm font-bold tabular-nums"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setKbOpen((v) => !v)}
+                className={cn(
+                  "flex h-9 items-center gap-1 rounded-2xl px-3 text-[11px] font-semibold shadow-soft transition",
+                  kbOpen ? "bg-ink text-surface" : "bg-white/80 text-ink hover:bg-white",
+                )}
+                title="Keyboard settings"
+              >
+                <Settings2 className="h-3.5 w-3.5" /> Keys
+              </button>
+            </div>
           </div>
-          <MarkKeyboard onPress={handleKeyboard} />
+          {kbOpen && (
+            <div className="mb-3 rounded-2xl border border-white/80 bg-white/70 p-3 shadow-soft">
+              <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-ink-muted">
+                Show keys
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ["showAb", "AB"],
+                  ["showNo", "NO"],
+                  ["showClear", "Clear"],
+                  ["showEnter", "Enter"],
+                ] as const).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => updateKb({ [key]: !kb[key] } as Partial<KbSettings>)}
+                    className={cn(
+                      "rounded-full border px-3 py-1 text-[11px] font-semibold transition",
+                      kb[key]
+                        ? "border-emerald-500 bg-emerald-500 text-white"
+                        : "border-border bg-canvas text-ink-muted",
+                    )}
+                  >
+                    {kb[key] ? "✓ " : ""}{label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 mb-2 text-[10px] font-bold uppercase tracking-wider text-ink-muted">
+                Button size
+              </div>
+              <div className="flex gap-2">
+                {(["compact", "regular", "large"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => updateKb({ size: s })}
+                    className={cn(
+                      "flex-1 rounded-full border px-3 py-1.5 text-[11px] font-semibold capitalize transition",
+                      kb.size === s
+                        ? "border-ink bg-ink text-surface"
+                        : "border-border bg-canvas text-ink-muted",
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <MarkKeyboard onPress={handleKeyboard} settings={kb} />
         </div>
       </div>
       {students.length > 0 && (
