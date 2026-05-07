@@ -225,7 +225,7 @@ const THEMES: Theme[] = [
   },
 ];
 
-const CARD_WIDTH = 720;
+const CARD_WIDTH = 960;
 
 function inlineComputedStyles(source: Element, clone: Element) {
   const sourceElements = [source, ...Array.from(source.querySelectorAll("*"))];
