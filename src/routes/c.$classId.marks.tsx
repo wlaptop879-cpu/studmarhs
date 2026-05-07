@@ -296,6 +296,23 @@ function NewExamForm({
   );
 }
 
+type KbSize = "compact" | "regular" | "large";
+type KbSettings = {
+  showAb: boolean;
+  showNo: boolean;
+  showClear: boolean;
+  showEnter: boolean;
+  size: KbSize;
+};
+const KB_SETTINGS_KEY = "wisdom-keyboard-settings-v1";
+const DEFAULT_KB: KbSettings = {
+  showAb: true,
+  showNo: true,
+  showClear: true,
+  showEnter: true,
+  size: "regular",
+};
+
 function MarksList({
   students,
   active,
@@ -306,6 +323,25 @@ function MarksList({
   onSet: (studentId: string, mark: MarkStatus | null) => void;
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [kbOpen, setKbOpen] = useState(false);
+  const [kb, setKb] = useState<KbSettings>(() => {
+    if (typeof window === "undefined") return DEFAULT_KB;
+    try {
+      const raw = window.localStorage.getItem(KB_SETTINGS_KEY);
+      return raw ? { ...DEFAULT_KB, ...JSON.parse(raw) } : DEFAULT_KB;
+    } catch {
+      return DEFAULT_KB;
+    }
+  });
+  function updateKb(patch: Partial<KbSettings>) {
+    setKb((prev) => {
+      const next = { ...prev, ...patch };
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(KB_SETTINGS_KEY, JSON.stringify(next));
+      }
+      return next;
+    });
+  }
   const [leastMarkText, setLeastMarkText] = useState(() => {
     if (typeof window === "undefined") return "";
     return window.localStorage.getItem(leastMarkStorageKey(active.id)) ?? "";
