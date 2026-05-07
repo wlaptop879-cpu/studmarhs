@@ -1015,8 +1015,8 @@ function ClassCard({
         )}
       </div>
 
-      {/* ===== Three columns ===== */}
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      {/* ===== Result columns ===== */}
+      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
         <ResultColumn
           headerColor="#16a34a"
           headerSoft="#dcfce7"
@@ -1054,6 +1054,19 @@ function ClassCard({
           footerColor="#1e3a8a"
           footerIcon={<span className="text-sm">👥</span>}
           footerText="தேர்வு எழுதுவது ஒரு நாள் இருக்கலாம், அதன் பயணம் தொடர்ட்டும்!"
+        />
+        <ResultColumn
+          headerColor="#9333ea"
+          headerSoft="#ede9fe"
+          headerIcon={<span className="text-[10px] font-bold text-white">AB</span>}
+          title="வரவில்லை (Absent)"
+          items={c4}
+          totalMarks={exam.totalMarks}
+          isAbsent
+          footerBg="#faf5ff"
+          footerColor="#581c87"
+          footerIcon={<span className="text-sm">📝</span>}
+          footerText="வரவில்லை என்பது தற்காலிகமான இடைவெளி மட்டுமே!"
         />
       </div>
 
