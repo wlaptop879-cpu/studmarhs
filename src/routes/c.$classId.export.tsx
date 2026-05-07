@@ -869,6 +869,7 @@ function ClassCard({
   const date = formatDate(exam.date);
   const reportRows = analysisRows ?? rows;
 
+  // Column 2: lowest scorers — sorted worst → best (low → high)
   const lowest = reportRows
     .filter(
       (r) =>
@@ -876,8 +877,9 @@ function ClassCard({
         r.mark < exam.totalMarks &&
         (leastMarkLimit === null || leastMarkLimit === undefined || r.mark <= leastMarkLimit),
     )
-    .sort((a, b) => (b.mark as number) - (a.mark as number));
+    .sort((a, b) => (a.mark as number) - (b.mark as number));
 
+  // Column 1: top scorers — sorted best → worst (high → low)
   const column1 = reportRows
     .filter(
       (r) =>
@@ -888,7 +890,9 @@ function ClassCard({
     )
     .sort((a, b) => (b.mark as number) - (a.mark as number));
 
-  const absent = reportRows.filter((r) => r.mark === "ab" || r.mark === "no");
+  // Column 3 split: NO = did-not-write, Column 4: AB = absent
+  const noWrite = reportRows.filter((r) => r.mark === "no");
+  const absentOnly = reportRows.filter((r) => r.mark === "ab");
 
   // Continuous S.No across columns
   let snoCounter = 0;
@@ -899,7 +903,8 @@ function ClassCard({
     });
   const c1 = withSno(column1);
   const c2 = withSno(lowest);
-  const c3 = withSno(absent);
+  const c3 = withSno(noWrite);
+  const c4 = withSno(absentOnly);
 
   return (
     <div
