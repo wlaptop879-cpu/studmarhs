@@ -665,60 +665,97 @@ function MarkInputCell({
   );
 }
 
-function MarkKeyboard({ onPress }: { onPress: (action: KeyboardAction) => void }) {
+function MarkKeyboard({
+  onPress,
+  settings,
+}: {
+  onPress: (action: KeyboardAction) => void;
+  settings: KbSettings;
+}) {
   const digits = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
+  const sizing = {
+    compact: { digit: "h-12 text-2xl", special: "h-14", enter: "h-12 text-base", icon: "h-6 w-6", gap: "gap-2" },
+    regular: { digit: "h-16 text-3xl", special: "h-20", enter: "h-16 text-xl", icon: "h-7 w-7", gap: "gap-3" },
+    large: { digit: "h-20 text-4xl", special: "h-24", enter: "h-20 text-2xl", icon: "h-8 w-8", gap: "gap-4" },
+  }[settings.size];
+
+  const specials: React.ReactNode[] = [];
+  if (settings.showAb) {
+    specials.push(
+      <button
+        key="ab"
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPress({ type: "special", value: "ab" })}
+        className={cn("rounded-3xl border border-rose bg-rose/50 text-center shadow-soft transition active:scale-95", sizing.special)}
+      >
+        <span className="block text-2xl font-black text-red-500">AB</span>
+        <span className="text-[11px] font-semibold text-ink">Absent</span>
+      </button>,
+    );
+  }
+  if (settings.showClear) {
+    specials.push(
+      <button
+        key="clear"
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPress({ type: "clear" })}
+        className={cn("flex flex-col items-center justify-center rounded-3xl bg-white text-ink shadow-soft transition active:scale-95 active:bg-canvas", sizing.special)}
+      >
+        <Delete className={sizing.icon} />
+        <span className="text-[11px] font-semibold">Clear</span>
+      </button>,
+    );
+  }
+  if (settings.showNo) {
+    specials.push(
+      <button
+        key="no"
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => onPress({ type: "special", value: "no" })}
+        className={cn("rounded-3xl border border-peach bg-peach/60 text-center shadow-soft transition active:scale-95", sizing.special)}
+      >
+        <span className="block text-2xl font-black text-orange-500">NO</span>
+        <span className="text-[11px] font-semibold text-ink">No Mark</span>
+      </button>,
+    );
+  }
+
   return (
-    <div className="grid gap-3">
-      <div className="grid grid-cols-5 gap-3">
+    <div className={cn("grid", sizing.gap)}>
+      <div className={cn("grid grid-cols-5", sizing.gap)}>
         {digits.map((digit) => (
           <button
             key={digit}
             type="button"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onPress({ type: "digit", value: digit })}
-            className="h-16 rounded-3xl bg-white text-3xl font-black text-slate-950 shadow-soft transition active:scale-95 active:bg-sky/60"
+            className={cn("rounded-3xl bg-white font-black text-slate-950 shadow-soft transition active:scale-95 active:bg-sky/60", sizing.digit)}
           >
             {digit}
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-3">
+      {specials.length > 0 && (
+        <div
+          className={cn("grid", sizing.gap)}
+          style={{ gridTemplateColumns: `repeat(${specials.length}, minmax(0, 1fr))` }}
+        >
+          {specials}
+        </div>
+      )}
+      {settings.showEnter && (
         <button
           type="button"
           onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onPress({ type: "special", value: "ab" })}
-          className="h-20 rounded-3xl border border-rose bg-rose/50 text-center shadow-soft transition active:scale-95"
+          onClick={() => onPress({ type: "enter" })}
+          className={cn("flex items-center justify-center gap-3 rounded-3xl bg-emerald-500 font-black text-white shadow-card transition hover:bg-emerald-600 active:scale-[0.98]", sizing.enter)}
         >
-          <span className="block text-3xl font-black text-red-500">AB</span>
-          <span className="text-xs font-semibold text-ink">Absent</span>
+          <Check className={sizing.icon} /> Enter
         </button>
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onPress({ type: "clear" })}
-          className="flex h-20 flex-col items-center justify-center rounded-3xl bg-white text-ink shadow-soft transition active:scale-95 active:bg-canvas"
-        >
-          <Delete className="h-9 w-9" />
-          <span className="text-xs font-semibold">Clear</span>
-        </button>
-        <button
-          type="button"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onPress({ type: "special", value: "no" })}
-          className="h-20 rounded-3xl border border-peach bg-peach/60 text-center shadow-soft transition active:scale-95"
-        >
-          <span className="block text-3xl font-black text-orange-500">NO</span>
-          <span className="text-xs font-semibold text-ink">No Mark</span>
-        </button>
-      </div>
-      <button
-        type="button"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => onPress({ type: "enter" })}
-        className="flex h-16 items-center justify-center gap-3 rounded-3xl bg-emerald-500 text-xl font-black text-white shadow-card transition hover:bg-emerald-600 active:scale-[0.98]"
-      >
-        <Check className="h-7 w-7" /> Enter
-      </button>
+      )}
     </div>
   );
 }
