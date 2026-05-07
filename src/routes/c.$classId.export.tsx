@@ -800,7 +800,7 @@ function ExportPage() {
           <Download className="h-3 w-3" /> Live Preview
         </div>
         {exam && cls && (
-          <div className="mx-auto w-full max-w-[720px] overflow-x-auto">
+          <div className="mx-auto w-full max-w-[960px] overflow-x-auto">
             <ClassCard
               ref={cardRef}
               exam={exam}
