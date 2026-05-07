@@ -554,7 +554,11 @@ function MarkInputCell({
           "h-10 w-20 rounded-xl text-center text-sm tabular-nums transition-colors",
           tone,
         )}
-        inputMode="text"
+        inputMode="none"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
       />
       <span className="hidden w-24 text-[10px] uppercase tracking-wider text-ink-muted sm:block">
         {value === undefined ? "Pending" : formatMark(value)}
